@@ -1,0 +1,25 @@
+'use strict';
+const fs=require('node:fs');
+const path=require('node:path');
+const assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..');
+const live=fs.readFileSync(path.join(root,'public/assets/css/liveview-garage.css'),'utf8');
+const dash=fs.readFileSync(path.join(root,'public/assets/css/living-garage.css'),'utf8');
+const php=fs.readFileSync(path.join(root,'public/live.php'),'utf8');
+const tail=live.slice(live.lastIndexOf('/* V0.1.1.81'));
+assert(tail,'final showcase calibration section present');
+assert(tail.includes('.lv-car-scene-contact:before{left:40%;top:86%}'),'front-wheel shadow at front tire height');
+assert(tail.includes('.lv-car-scene-contact:after{left:68%;top:77%}'),'rear-wheel shadow independently higher');
+assert(tail.includes('.lv-car-scene-road{display:none!important}'),'old floating oval not re-enabled');
+assert(tail.includes('width:100%;height:112%'),'large desktop car sized from real alpha bounds');
+assert(tail.includes('min-width:1100px')&&tail.includes('max-width:1599px'),'Tesla 1256-wide browser range');
+assert(tail.includes('height:85%;top:17%'),'medium viewport car not oversized');
+assert(tail.includes('.lv-speed-gauge[data-mode="sleeping"] .lv-gauge-sleep-symbol{display:none}'),'sleep mock Zz not replaced by moon');
+assert(tail.includes('.lv-session-stat-copy .lv-session-unit'),'metric units preserved');
+assert(dash.includes('/* V0.1.1.81'),'dashboard calibration present');
+assert(dash.includes('white-space:nowrap'),'long dashboard heading kept on one line at desktop width');
+assert(dash.includes('.dashboard-dataflow{')&&dash.includes('min-height:240px'),'info panel has useful desktop scale');
+assert(dash.includes('.dashboard-hero-grid{'),'showroom stage grid calibrated');
+for(const id of ['lvTripDistance','lvTripDuration','lvTripConsumption','lvTripMax','lvCarSceneImage','lvPowerValue','lvBattery'])
+  assert(php.includes('id="'+id+'"'),'live telemetry DOM contract preserved: '+id);
+console.log('Showroom V81 regression PASS: separate tire depths, PC/Tesla scale, Zz, live telemetry, dataflow');

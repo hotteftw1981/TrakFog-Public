@@ -1,0 +1,150 @@
+x-trakfog-version: "0.1.1.89"
+
+name: trakfog
+
+services:
+  db:
+    image: mariadb:11.8
+    container_name: trakfog-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${TRAKFOG_DB_NAME:-trakfog}
+      MARIADB_USER: ${TRAKFOG_DB_USER:-trakfog}
+      MARIADB_PASSWORD: ${TRAKFOG_DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${TRAKFOG_DB_ROOT_PASSWORD}
+      TZ: ${TRAKFOG_TIMEZONE:-Europe/Berlin}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --transaction-isolation=READ-COMMITTED
+    volumes:
+      - trakfog_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$$MARIADB_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - trakfog
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    container_name: trakfog-web
+    restart: unless-stopped
+    environment:
+      TRAKFOG_DOCKER: "1"
+      TRAKFOG_DB_HOST: db
+      TRAKFOG_DB_PORT: "3306"
+      TRAKFOG_DB_NAME: ${TRAKFOG_DB_NAME:-trakfog}
+      TRAKFOG_DB_USER: ${TRAKFOG_DB_USER:-trakfog}
+      TRAKFOG_DB_PASSWORD: ${TRAKFOG_DB_PASSWORD}
+      TRAKFOG_APP_KEY: ${TRAKFOG_APP_KEY:-}
+      TRAKFOG_APP_KEY_FILE: /var/lib/trakfog/app_key
+      TRAKFOG_TIMEZONE: ${TRAKFOG_TIMEZONE:-Europe/Berlin}
+      TRAKFOG_BASE_URL: ${TRAKFOG_BASE_URL:-}
+      TRAKFOG_OWNER_USER: ${TRAKFOG_OWNER_USER:-admin}
+      TRAKFOG_OWNER_EMAIL: ${TRAKFOG_OWNER_EMAIL:-}
+      TRAKFOG_OWNER_PASSWORD: ${TRAKFOG_OWNER_PASSWORD:-}
+      TRAKFOG_WORKER_POLL_ONLINE_SECONDS: ${TRAKFOG_WORKER_POLL_ONLINE_SECONDS:-30}
+      TRAKFOG_MIN_TRIP_DISTANCE_METERS: ${TRAKFOG_MIN_TRIP_DISTANCE_METERS:-100}
+      TRAKFOG_WORKER_POLL_SLEEP_SECONDS: ${TRAKFOG_WORKER_POLL_SLEEP_SECONDS:-60}
+      TRAKFOG_GEOCODER_ENABLED: ${TRAKFOG_GEOCODER_ENABLED:-1}
+      TRAKFOG_GEOCODER_URL: ${TRAKFOG_GEOCODER_URL:-https://nominatim.openstreetmap.org}
+    volumes:
+      - trakfog_runtime:/var/lib/trakfog
+      - trakfog_logs:/var/www/html/storage/logs
+    ports:
+      - "${TRAKFOG_HTTP_PORT:-8780}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - trakfog
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    container_name: trakfog-worker
+    restart: unless-stopped
+    environment:
+      TRAKFOG_DB_HOST: db
+      TRAKFOG_DB_PORT: "3306"
+      TRAKFOG_DB_NAME: ${TRAKFOG_DB_NAME:-trakfog}
+      TRAKFOG_DB_USER: ${TRAKFOG_DB_USER:-trakfog}
+      TRAKFOG_DB_PASSWORD: ${TRAKFOG_DB_PASSWORD}
+      TRAKFOG_APP_KEY: ${TRAKFOG_APP_KEY:-}
+      TRAKFOG_APP_KEY_FILE: /var/lib/trakfog/app_key
+      TRAKFOG_WORKER_POLL_ONLINE_SECONDS: ${TRAKFOG_WORKER_POLL_ONLINE_SECONDS:-30}
+      TRAKFOG_MIN_TRIP_DISTANCE_METERS: ${TRAKFOG_MIN_TRIP_DISTANCE_METERS:-100}
+      TRAKFOG_WORKER_POLL_SLEEP_SECONDS: ${TRAKFOG_WORKER_POLL_SLEEP_SECONDS:-60}
+      TRAKFOG_WORKER_HEARTBEAT_SECONDS: ${TRAKFOG_WORKER_HEARTBEAT_SECONDS:-15}
+      TRAKFOG_TESLA_API_HOST: ${TRAKFOG_TESLA_API_HOST:-https://owner-api.teslamotors.com}
+      TRAKFOG_TESLA_AUTH_HOST: ${TRAKFOG_TESLA_AUTH_HOST:-https://auth.tesla.com}
+      TRAKFOG_TESLA_WSS_HOST: ${TRAKFOG_TESLA_WSS_HOST:-wss://streaming.vn.teslamotors.com}
+      TRAKFOG_GEOCODER_ENABLED: ${TRAKFOG_GEOCODER_ENABLED:-1}
+      TRAKFOG_GEOCODER_URL: ${TRAKFOG_GEOCODER_URL:-https://nominatim.openstreetmap.org}
+      TRAKFOG_GEOCODER_USER_AGENT: ${TRAKFOG_GEOCODER_USER_AGENT:-TrakFog self-hosted Tesla data platform}
+    volumes:
+      - trakfog_runtime:/var/lib/trakfog:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    networks:
+      - trakfog
+
+  updater:
+    build:
+      context: .
+      dockerfile: docker/updater/Dockerfile
+    container_name: trakfog-updater
+    restart: unless-stopped
+    environment:
+      TRAKFOG_HTTP_PORT: ${TRAKFOG_HTTP_PORT:-8780}
+      TRAKFOG_TIMEZONE: ${TRAKFOG_TIMEZONE:-Europe/Berlin}
+      TRAKFOG_BASE_URL: ${TRAKFOG_BASE_URL:-}
+      TRAKFOG_DB_NAME: ${TRAKFOG_DB_NAME:-trakfog}
+      TRAKFOG_DB_USER: ${TRAKFOG_DB_USER:-trakfog}
+      TRAKFOG_DB_PASSWORD: ${TRAKFOG_DB_PASSWORD}
+      TRAKFOG_DB_ROOT_PASSWORD: ${TRAKFOG_DB_ROOT_PASSWORD}
+      TRAKFOG_APP_KEY: ${TRAKFOG_APP_KEY:-}
+      TRAKFOG_OWNER_USER: ${TRAKFOG_OWNER_USER:-admin}
+      TRAKFOG_OWNER_EMAIL: ${TRAKFOG_OWNER_EMAIL:-}
+      TRAKFOG_OWNER_PASSWORD: ${TRAKFOG_OWNER_PASSWORD:-}
+      TRAKFOG_WORKER_POLL_ONLINE_SECONDS: ${TRAKFOG_WORKER_POLL_ONLINE_SECONDS:-30}
+      TRAKFOG_MIN_TRIP_DISTANCE_METERS: ${TRAKFOG_MIN_TRIP_DISTANCE_METERS:-100}
+      TRAKFOG_WORKER_POLL_SLEEP_SECONDS: ${TRAKFOG_WORKER_POLL_SLEEP_SECONDS:-60}
+      TRAKFOG_WORKER_HEARTBEAT_SECONDS: ${TRAKFOG_WORKER_HEARTBEAT_SECONDS:-15}
+      TRAKFOG_TESLA_API_HOST: ${TRAKFOG_TESLA_API_HOST:-https://owner-api.teslamotors.com}
+      TRAKFOG_TESLA_AUTH_HOST: ${TRAKFOG_TESLA_AUTH_HOST:-https://auth.tesla.com}
+      TRAKFOG_TESLA_WSS_HOST: ${TRAKFOG_TESLA_WSS_HOST:-wss://streaming.vn.teslamotors.com}
+      TRAKFOG_GEOCODER_ENABLED: ${TRAKFOG_GEOCODER_ENABLED:-1}
+      TRAKFOG_GEOCODER_URL: ${TRAKFOG_GEOCODER_URL:-https://nominatim.openstreetmap.org}
+      TRAKFOG_GEOCODER_USER_AGENT: ${TRAKFOG_GEOCODER_USER_AGENT:-TrakFog self-hosted Tesla data platform}
+      TRAKFOG_UPDATER_TOKEN_FILE: /var/lib/trakfog/updater_token
+      TRAKFOG_UPDATER_STATUS_FILE: /var/lib/trakfog/updater_status.json
+    volumes:
+      - trakfog_runtime:/var/lib/trakfog
+      - "${TRAKFOG_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock"
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - trakfog
+    read_only: true
+    tmpfs:
+      - /tmp:size=268435456,mode=1777
+
+volumes:
+  trakfog_db:
+  trakfog_runtime:
+  trakfog_logs:
+
+networks:
+  trakfog:
+    name: trakfog

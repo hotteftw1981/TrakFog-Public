@@ -1,0 +1,18 @@
+{
+  "name": "TrakFog",
+  "short_name": "TrakFog",
+  "description": "Self-hosted Tesla data platform",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06111f",
+  "theme_color": "#06111f",
+  "icons": [
+    {
+      "src": "assets/brand/trakfog-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

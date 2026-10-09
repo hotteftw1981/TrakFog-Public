@@ -1,0 +1,427 @@
+/* TrakFog Living Garage V0.1.1.59 · browser-only cinematic effects */
+.dashboard-v2 .dashboard-hero{
+ --lg-blue:#4daeff;--lg-energy:rgba(42,158,255,.45);--lg-alpha:.58;
+ grid-template-columns:minmax(310px,.98fr) minmax(310px,1.1fr) minmax(190px,.43fr);
+ min-height:410px;
+ background:radial-gradient(ellipse at 64% 69%,rgba(23,97,167,.17),transparent 49%),linear-gradient(145deg,#060e18,#081525 52%,#06101a);
+}
+.dashboard-v2 .dashboard-hero.mode-charging{--lg-blue:#60dbff;--lg-energy:rgba(58,186,255,.55);--lg-alpha:.85}
+.dashboard-v2 .dashboard-hero.mode-driving{--lg-blue:#78baff;--lg-energy:rgba(64,160,255,.43);--lg-alpha:.72}
+.dashboard-v2 .dashboard-hero.mode-sleeping{--lg-blue:#5583aa;--lg-energy:rgba(48,102,152,.19);--lg-alpha:.27}
+.dashboard-v2 .dashboard-hero.mode-offline{--lg-blue:#66788c;--lg-energy:rgba(90,110,129,.12);--lg-alpha:.16}
+.dashboard-v2 .dashboard-hero-copy{z-index:5}
+.dashboard-v2 .dashboard-hero-rail{z-index:7;min-width:0}
+.dashboard-v2 .dashboard-hero-stage{z-index:2;min-width:0;overflow:hidden;isolation:isolate}
+.dashboard-v2 .dashboard-hero-backdrop{z-index:-1}
+.dashboard-v2 .dashboard-primary-car{
+ width:min(97%,555px);max-width:97%;right:1%;bottom:16%;z-index:6;
+ animation:none;transform:none;filter:drop-shadow(0 14px 19px rgba(0,0,0,.38));
+ transition:opacity .55s ease,filter .65s ease;
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-scene-car{width:100%;height:auto;max-width:100%;display:block}
+.dashboard-v2 .dashboard-primary-car .dashboard-car-aura{opacity:.35}
+.dashboard-v2 .dashboard-stage-floor{left:9%;right:5%;bottom:12%;height:12%;background:radial-gradient(ellipse,var(--lg-energy),transparent 70%);opacity:.7;filter:blur(11px)}
+.dashboard-v2 .dashboard-charge-cable{display:none!important}
+.dashboard-v2 .dashboard-charge-port{right:13%;top:54%;width:8px;height:8px}
+.dashboard-v2 .dashboard-hero.mode-online .dashboard-primary-car,
+.dashboard-v2 .dashboard-hero.mode-driving .dashboard-primary-car{animation:none}
+.dashboard-v2 .dashboard-hero.mode-sleeping .dashboard-primary-car{opacity:.87;filter:brightness(.75) saturate(.8) drop-shadow(0 15px 19px rgba(0,0,0,.44))}
+.dashboard-v2 .dashboard-hero.mode-offline .dashboard-primary-car{opacity:.6;filter:grayscale(.45) brightness(.54)}
+.dashboard-v2 .dashboard-hero.mode-charging .dashboard-primary-car{filter:drop-shadow(0 14px 20px rgba(17,138,238,.33))}
+.dashboard-v2 .dashboard-vehicle-thumb{width:108px;height:70px;overflow:visible;filter:none;transform:none}
+.dashboard-v2 .dashboard-vehicle-thumb .dashboard-card-car{width:105px;max-width:105px;height:auto;transform:none;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(0,0,0,.36))}
+.dashboard-v2 .dashboard-vehicle-card{min-height:116px;grid-template-columns:minmax(0,1fr) 108px}
+.lg-atmosphere{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;opacity:var(--lg-alpha);transition:opacity .7s ease}
+.lg-horizon{position:absolute;left:0;right:0;top:65%;height:2px;background:linear-gradient(90deg,transparent,var(--lg-blue),transparent);box-shadow:0 0 17px var(--lg-energy);opacity:.45;animation:lg-horizon 6s ease-in-out infinite}
+.lg-lightwash{position:absolute;inset:0;background:linear-gradient(105deg,transparent 18%,rgba(110,196,255,.05) 37%,rgba(160,220,255,.12) 48%,transparent 62%);transform:translateX(-130%);animation:lg-lightwash 12s ease-in-out infinite}
+.lg-ground-halo{position:absolute;left:11%;right:7%;bottom:8%;height:32%;border-radius:50%;background:radial-gradient(ellipse,rgba(28,126,228,.22),transparent 65%);filter:blur(19px);animation:lg-breathe 7s ease-in-out infinite}
+.lg-ground-ring{position:absolute;left:10%;right:7%;bottom:2%;height:135px;border-radius:50%;border:2px solid var(--lg-blue);opacity:.43;transform:perspective(570px) rotateX(67deg);box-shadow:0 0 14px var(--lg-energy),inset 0 0 14px var(--lg-energy);animation:lg-breathe 6s ease-in-out infinite}
+.lg-ground-ring:after{content:"";position:absolute;inset:-4px;border-radius:50%;border:4px solid transparent;border-top-color:var(--lg-blue);border-right-color:var(--lg-blue);opacity:.88;animation:lg-ring-sweep 6s linear infinite}
+.lg-haze{position:absolute;bottom:3%;left:2%;width:94%;height:30%;background:radial-gradient(ellipse at 55% 60%,rgba(54,155,231,.11),transparent 70%);filter:blur(25px);animation:lg-haze-drift 16s ease-in-out infinite alternate}
+.lg-point{position:absolute;bottom:24%;width:4px;height:4px;border-radius:50%;background:#a2e5ff;box-shadow:0 0 11px 3px var(--lg-blue);animation:lg-point-glimmer 5s ease-in-out infinite}
+.lg-point.one{left:14%;animation-delay:-1s}.lg-point.two{left:40%;animation-delay:-3s}.lg-point.three{right:13%;animation-delay:-2s}
+.lg-speedlines{position:absolute;inset:50% -30% -25%;background:repeating-linear-gradient(90deg,transparent 0 20%,rgba(76,175,255,.12) 21%,transparent 22% 30%);transform:perspective(380px) rotateX(65deg);opacity:0}
+.dashboard-v2 .dashboard-hero.mode-online .lg-ground-ring:after{animation-duration:9s}
+.dashboard-v2 .dashboard-hero.mode-charging .lg-ground-ring{border-color:#7de6ff;box-shadow:0 0 27px rgba(48,166,255,.72),inset 0 0 23px rgba(45,173,255,.58)}
+.dashboard-v2 .dashboard-hero.mode-charging .lg-ground-ring:after{animation-duration:2.4s}
+.dashboard-v2 .dashboard-hero.mode-charging .lg-ground-halo{animation-duration:2.9s}
+.dashboard-v2 .dashboard-hero.mode-charging .lg-point{animation-duration:1.8s}
+.dashboard-v2 .dashboard-hero.mode-driving .lg-speedlines{opacity:.86;animation:lg-drive-road 1.8s linear infinite}
+.dashboard-v2 .dashboard-hero.mode-driving .lg-lightwash{animation-duration:4s}
+.dashboard-v2 .dashboard-hero.mode-sleeping .lg-ground-ring:after{animation-duration:18s;opacity:.24}
+.dashboard-v2 .dashboard-hero.mode-sleeping .lg-horizon,
+.dashboard-v2 .dashboard-hero.mode-sleeping .lg-point{animation-duration:15s}
+.dashboard-v2 .dashboard-hero.mode-offline .lg-lightwash,
+.dashboard-v2 .dashboard-hero.mode-offline .lg-point,
+.dashboard-v2 .dashboard-hero.mode-offline .lg-ground-ring:after{animation:none;opacity:0}
+.dashboard-v2 .dashboard-hero.mode-offline .lg-horizon{animation:none;opacity:.2}
+.dashboard-v2 .dashboard-hero-metrics strong{display:inline-block;transition:color .4s ease}
+.dashboard-v2 .dashboard-hero .lg-metric-changed{animation:lg-number-change 1s ease-out 1}
+.dashboard-v2 .dashboard-dataflow>strong>i{animation:lg-breathe 4s ease-in-out infinite}
+.dashboard-v2 .dashboard-data-wave i{animation-duration:5s}
+.dashboard-v2 .dashboard-hero.mode-charging .dashboard-data-wave i{animation-duration:2.2s}
+.dashboard-v2 .dashboard-hero.mode-sleeping .dashboard-data-wave i{animation-duration:13s;opacity:.24}
+.dashboard-v2 .dashboard-hero.lg-data-received .dashboard-dataflow{border-color:rgba(103,215,255,.58);box-shadow:0 0 22px rgba(39,155,249,.20)}
+.dashboard-v2 .dashboard-hero.lg-data-received .dashboard-data-wave{filter:brightness(2);transition:filter .6s}
+.lg-motion-settings{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:13px;font-size:10px;color:#9fbbd0}
+.lg-motion-label{font-weight:650;margin-right:5px;letter-spacing:.02em}
+.lg-motion-settings button{border:1px solid rgba(111,170,216,.18);border-radius:7px;background:rgba(7,22,34,.78);color:#9fb3c6;font-size:10px;min-height:26px;padding:4px 10px;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.lg-motion-settings button:hover,.lg-motion-settings button:focus-visible{border-color:#68bbff;color:#fff;outline-offset:2px}
+.lg-motion-settings button[aria-pressed="true"]{border-color:rgba(53,172,255,.72);background:rgba(26,137,235,.22);color:#d7f0ff}
+.dashboard-v2 .dashboard-hero[data-lg-motion="full"]{--lg-alpha:1}
+.dashboard-v2 .dashboard-hero.mode-sleeping[data-lg-motion="full"]{--lg-alpha:.45}
+.dashboard-v2 .dashboard-hero[data-lg-motion="full"] .lg-ground-ring:after{animation-duration:2.7s}
+.dashboard-v2 .dashboard-hero[data-lg-motion="full"] .lg-lightwash{animation-duration:6s}
+.dashboard-v2 .dashboard-hero[data-lg-motion="full"] .lg-point{animation-duration:2.4s}
+.dashboard-v2 .dashboard-hero[data-lg-motion="off"] .lg-atmosphere{opacity:0;visibility:hidden}
+.dashboard-v2 .dashboard-hero[data-lg-motion="off"] .dashboard-hero-fog,
+.dashboard-v2 .dashboard-hero[data-lg-motion="off"] .dashboard-energy-line,
+.dashboard-v2 .dashboard-hero[data-lg-motion="off"] .dashboard-data-wave i,
+.dashboard-v2 .dashboard-hero[data-lg-motion="off"] .dashboard-dataflow>strong>i,
+.dashboard-v2 .dashboard-hero[data-lg-motion="off"] .dashboard-primary-car{animation:none!important}
+.dashboard-v2 .dashboard-hero[data-lg-motion="off"] .dashboard-data-wave i{opacity:.2}
+.dashboard-v2 .dashboard-hero[data-lg-motion="off"] .lg-metric-changed{animation:none!important}
+@keyframes lg-horizon{0%,100%{opacity:.20}50%{opacity:.7}}
+@keyframes lg-lightwash{0%,12%{transform:translateX(-130%)}63%,100%{transform:translateX(130%)}}
+@keyframes lg-breathe{0%,100%{opacity:.42}50%{opacity:1}}
+@keyframes lg-ring-sweep{to{transform:rotate(360deg)}}
+@keyframes lg-haze-drift{to{transform:translateX(8%) scale(1.08)}}
+@keyframes lg-point-glimmer{0%,100%{opacity:.1;transform:scale(.65)}50%{opacity:.85;transform:scale(1.4)}}
+@keyframes lg-drive-road{to{background-position:115px 0}}
+@keyframes lg-number-change{0%{color:#b6f2ff;text-shadow:0 0 13px #40a5ff;transform:translateY(1px)}100%{color:inherit;text-shadow:none;transform:none}}
+@media(max-width:1180px){.dashboard-v2 .dashboard-hero{grid-template-columns:minmax(260px,.95fr) minmax(310px,1.05fr)}.dashboard-v2 .dashboard-primary-car{max-width:96%;width:min(96%,530px);bottom:16%}}
+@media(max-width:860px){.dashboard-v2 .dashboard-hero{grid-template-columns:1fr;min-height:660px}.dashboard-v2 .dashboard-hero-stage{min-height:320px;overflow:hidden}.dashboard-v2 .dashboard-primary-car{width:min(85%,515px);right:4%;bottom:15%}.dashboard-v2 .dashboard-hero-copy{padding:23px 23px 0}}
+@media(max-width:620px){.dashboard-v2 .dashboard-hero{min-height:610px}.dashboard-v2 .dashboard-hero-stage{min-height:270px}.dashboard-v2 .dashboard-primary-car{width:92%;right:3%;bottom:16%}.dashboard-v2 .dashboard-secondary-car:nth-of-type(n+4){display:none!important}.lg-motion-settings{margin-top:11px}}
+@media(prefers-reduced-motion:reduce){
+ .dashboard-v2 .dashboard-hero .lg-atmosphere *,
+ .dashboard-v2 .dashboard-hero .dashboard-hero-fog,
+ .dashboard-v2 .dashboard-hero .dashboard-energy-line,
+ .dashboard-v2 .dashboard-hero .dashboard-data-wave i,
+ .dashboard-v2 .dashboard-hero .dashboard-dataflow>strong>i,
+ .dashboard-v2 .dashboard-hero .lg-metric-changed{animation:none!important;transition:none!important}
+}
+
+/* One click on the vehicle image opens its details; clicking elsewhere selects. */
+.dashboard-thumb-link{cursor:pointer;text-decoration:none;position:relative;z-index:3;outline-offset:4px;border-radius:10px}
+.dashboard-thumb-link:hover .dashboard-car-image,.dashboard-thumb-link:focus-visible .dashboard-car-image{transform:translateY(-3px) scale(1.05);filter:drop-shadow(0 9px 11px rgba(69,166,255,.32))}
+.dashboard-thumb-link .dashboard-car-image{transition:transform .18s ease,filter .18s ease}
+
+/* V0.1.1.77 | Real-grounded showroom: no floating vehicle and no hovering halo. */
+.dashboard-v2 .dashboard-primary-car{
+  width:min(78%,445px);max-width:78%;right:11%;bottom:11%;
+  filter:drop-shadow(0 9px 9px rgba(0,0,0,.62));
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-scene-car{width:100%;height:auto;max-width:100%}
+.dashboard-v2 .dashboard-stage-floor{
+  left:24%;right:17%;bottom:12%;height:12%;
+  background:radial-gradient(ellipse,rgba(0,0,0,.75) 0,rgba(0,0,0,.52) 42%,rgba(30,82,120,.11) 65%,transparent 76%);
+  opacity:1;filter:blur(7px);
+}
+.dashboard-v2 .dashboard-hero-stage:after{
+  content:"";position:absolute;z-index:3;left:24%;right:19%;bottom:11%;
+  height:4%;border-radius:50%;pointer-events:none;
+  background:rgba(0,0,0,.6);filter:blur(7px);
+}
+.dashboard-v2 .lg-ground-ring{
+  left:22%;right:16%;bottom:7%;height:72px;
+  border-width:1px;opacity:.18;
+  transform:perspective(500px) rotateX(77deg);
+  box-shadow:0 0 9px rgba(50,153,225,.16),inset 0 0 5px rgba(50,153,225,.12);
+}
+.dashboard-v2 .lg-ground-ring:after{opacity:.2;border-width:1px}
+.dashboard-v2 .lg-ground-halo{left:27%;right:20%;bottom:8%;height:16%;opacity:.18;filter:blur(20px)}
+.dashboard-v2 .lg-horizon{top:77%;opacity:.2}
+.dashboard-v2 .dashboard-hero.mode-driving .dashboard-primary-car{
+  animation:none!important;filter:drop-shadow(0 9px 9px rgba(0,0,0,.59));
+}
+@media(max-width:1180px){
+  .dashboard-v2 .dashboard-primary-car{width:min(76%,425px);max-width:76%;right:11%;bottom:13%}
+}
+@media(max-width:860px){
+  .dashboard-v2 .dashboard-primary-car{width:min(68%,410px);max-width:68%;right:16%;bottom:13%}
+  .dashboard-v2 .dashboard-stage-floor{left:23%;right:22%}
+}
+@media(max-width:620px){
+  .dashboard-v2 .dashboard-primary-car{width:72%;max-width:72%;right:14%;bottom:14%}
+  .dashboard-v2 .lg-ground-ring{left:19%;right:18%;bottom:8%;height:54px}
+}
+
+/* V0.1.1.80 | Approved showroom – 3D car rests on its OWN shadow,
+   the stage floor no longer contains an independent black oval. */
+.dashboard-v2 .dashboard-showroom-symbols{position:absolute;width:0;height:0;overflow:hidden}
+.dashboard-v2 .dashboard-hero{
+  min-height:clamp(430px,33vw,550px);
+  background:radial-gradient(ellipse at 64% 71%,rgba(28,103,179,.23),transparent 57%),
+    linear-gradient(145deg,#061422,#081c30 57%,#061525);
+}
+.dashboard-v2 .dashboard-hero-copy{
+  align-self:center;
+  padding:clamp(19px,2vw,30px);
+}
+.dashboard-v2 .dashboard-hero-copy h2{
+  font-size:clamp(29px,2.7vw,47px);
+  line-height:1.06;letter-spacing:-.037em;
+}
+.dashboard-v2 .dashboard-hero-copy>p{font-size:clamp(10px,.78vw,12px);max-width:475px}
+.dashboard-v2 .dashboard-hero-metrics{gap:clamp(10px,.9vw,18px) clamp(10px,1vw,19px)}
+.dashboard-v2 .dashboard-hero-metrics>div{
+  grid-template-columns:clamp(28px,2.7vw,40px) minmax(0,1fr);
+  gap:clamp(8px,.78vw,12px);
+  min-width:0;
+}
+.dashboard-v2 .dashboard-hero-metrics .dashboard-metric-icon{
+  width:clamp(29px,2.7vw,41px);height:clamp(29px,2.7vw,41px);
+  border:1px solid rgba(80,155,208,.25);
+  background:rgba(10,34,56,.72);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  color:#7bc5f6;text-shadow:none;
+}
+.dashboard-v2 .dashboard-hero-metrics .dashboard-metric-icon svg{
+  width:55%;height:55%;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
+}
+.dashboard-v2 .dashboard-hero-metrics strong{
+  font-family:Inter,"Segoe UI",ui-sans-serif,system-ui,sans-serif;
+  font-size:clamp(13px,1.05vw,17px);
+  font-weight:630;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums lining-nums;
+}
+.dashboard-v2 .dashboard-hero-metrics small{
+  font-size:clamp(9px,.7vw,11px);line-height:1.25;
+  color:#a3bfd2;
+}
+.dashboard-v2 .dashboard-hero-stage{overflow:visible}
+.dashboard-v2 .dashboard-primary-car{
+  width:min(93%,560px);max-width:93%;
+  right:9%;bottom:9%;z-index:6;
+  transform:none;animation:none!important;
+  filter:none;
+  isolation:isolate;
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-scene-car{
+  width:100%;max-width:100%;
+  height:auto;position:relative;z-index:2;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact{
+  display:block;position:absolute;z-index:0;pointer-events:none;
+  left:16%;right:12%;bottom:17%;height:10%;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,0,0,.58) 0,rgba(0,0,0,.24) 47%,transparent 78%);
+  filter:blur(7px);
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact::before,
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact::after{
+  content:"";position:absolute;bottom:20%;width:21%;height:43%;
+  border-radius:50%;filter:blur(3px);background:rgba(0,0,0,.66);
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact::before{left:23%}
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact::after{right:6%}
+/* Car alpha is visible roughly between 22 and 81% of each studio cutout.
+   Keep attached shadow at ~19% above image bottom for all six variants. */
+.dashboard-v2 .dashboard-hero.mode-sleeping .dashboard-primary-car{
+  opacity:.9;filter:none;
+}
+.dashboard-v2 .dashboard-hero.mode-sleeping .dashboard-primary-car .dashboard-scene-car{
+  filter:brightness(.77) saturate(.78) drop-shadow(0 2px 3px rgba(0,0,0,.58));
+}
+.dashboard-v2 .dashboard-hero.mode-charging .dashboard-primary-car{
+  filter:none;
+}
+.dashboard-v2 .dashboard-hero.mode-charging .dashboard-primary-car .dashboard-scene-car{
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.53));
+}
+.dashboard-v2 .dashboard-hero.mode-driving .dashboard-primary-car{
+  animation:none!important;filter:none;
+}
+.dashboard-v2 .dashboard-hero.mode-offline .dashboard-primary-car{filter:none;opacity:.6}
+.dashboard-v2 .dashboard-hero.mode-offline .dashboard-primary-car .dashboard-scene-car{filter:grayscale(.6) brightness(.62)}
+.dashboard-v2 .dashboard-car-aura{
+  z-index:-1;opacity:.14;
+  inset:52% 15% 17%;filter:blur(24px);
+}
+.dashboard-v2 .dashboard-stage-floor{
+  left:11%;right:10%;bottom:10%;height:28%;
+  opacity:.38;filter:blur(12px);
+  background:radial-gradient(ellipse at center,rgba(35,112,180,.22) 0,rgba(21,68,115,.09) 48%,transparent 72%);
+}
+.dashboard-v2 .dashboard-hero-stage::after{display:none!important}
+.dashboard-v2 .lg-ground-ring{opacity:.06;bottom:9%;border-width:1px;box-shadow:none}
+.dashboard-v2 .lg-ground-ring::after{opacity:0}
+.dashboard-v2 .lg-ground-halo{opacity:.12;filter:blur(22px)}
+.dashboard-v2 .lg-horizon{opacity:.10}
+.dashboard-v2 .dashboard-dataflow,
+.dashboard-v2 .dashboard-hero-note{
+  border-color:rgba(89,164,219,.23);
+  background:rgba(4,18,30,.81);
+}
+.dashboard-v2 .dashboard-hero-actions .btn{
+  font-size:clamp(10px,.75vw,12px);
+  min-height:38px;
+}
+@media(max-width:1180px){
+  .dashboard-v2 .dashboard-primary-car{
+    width:min(91%,500px);max-width:91%;right:5%;bottom:10%;
+  }
+  .dashboard-v2 .dashboard-hero-metrics .dashboard-metric-icon{
+    width:30px;height:30px;
+  }
+  .dashboard-v2 .dashboard-hero-copy h2{font-size:clamp(28px,3vw,39px)}
+}
+@media(max-width:860px){
+  .dashboard-v2 .dashboard-hero{min-height:660px}
+  .dashboard-v2 .dashboard-hero-stage{min-height:295px;overflow:hidden}
+  .dashboard-v2 .dashboard-primary-car{
+    width:min(82%,470px);max-width:82%;right:9%;bottom:6%;
+  }
+  .dashboard-v2 .dashboard-hero-copy{padding:23px 20px 0}
+  .dashboard-v2 .dashboard-hero-copy h2{font-size:clamp(29px,5vw,42px)}
+}
+@media(max-width:620px){
+  .dashboard-v2 .dashboard-hero{min-height:590px}
+  .dashboard-v2 .dashboard-hero-copy{padding:16px 14px 0}
+  .dashboard-v2 .dashboard-primary-car{
+    width:min(94%,390px);max-width:94%;right:2%;bottom:7%;
+  }
+  .dashboard-v2 .dashboard-hero-metrics>div{grid-template-columns:27px minmax(0,1fr);gap:6px}
+  .dashboard-v2 .dashboard-hero-metrics .dashboard-metric-icon{width:27px;height:27px}
+  .dashboard-v2 .dashboard-hero-metrics strong{font-size:13px}
+  .dashboard-v2 .dashboard-hero-metrics small{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .dashboard-v2 .dashboard-primary-car,
+  .dashboard-v2 .dashboard-primary-car .dashboard-scene-car{animation:none!important;transition:none!important}
+}
+/* V0.1.1.81 – typography/spacing traced against the accepted showroom mockup. */
+@media(min-width:1181px){
+  .dashboard-v2 .dashboard-hero{
+    grid-template-columns:minmax(315px,1fr) minmax(300px,1.1fr) minmax(235px,.52fr);
+  }
+}
+.dashboard-v2 .dashboard-hero-copy h2{
+  font-size:clamp(32px,3.25vw,56px);line-height:1.06;letter-spacing:-.04em;
+}
+.dashboard-v2 .dashboard-hero-copy>p{
+  max-width:540px;font-size:clamp(11px,.86vw,13px);line-height:1.55;
+}
+.dashboard-v2 .dashboard-hero-metrics{
+  gap:clamp(12px,1.15vw,19px) clamp(13px,1.25vw,21px);
+}
+.dashboard-v2 .dashboard-hero-metrics strong{
+  font-size:clamp(14px,1.12vw,19px);font-weight:640;
+}
+.dashboard-v2 .dashboard-hero-metrics small{
+  font-size:clamp(10px,.73vw,12px);line-height:1.25;
+}
+.dashboard-v2 .dashboard-hero-metrics .dashboard-metric-icon{
+  width:clamp(32px,2.7vw,42px);height:clamp(32px,2.7vw,42px);
+}
+.dashboard-v2 .dashboard-dataflow{
+  display:flex;flex-direction:column;min-height:240px;padding:17px;
+}
+.dashboard-v2 .dashboard-dataflow>span{font-size:10px}
+.dashboard-v2 .dashboard-dataflow>strong{font-size:12px;margin-top:10px}
+.dashboard-v2 .dashboard-data-wave{flex:1;min-height:40px;margin:15px 0 10px}
+.dashboard-v2 .dashboard-dataflow ul{gap:10px}
+.dashboard-v2 .dashboard-dataflow li{font-size:10px}
+.dashboard-v2 .dashboard-hero-note{padding:14px}
+.dashboard-v2 .dashboard-hero-note strong{font-size:12px}
+.dashboard-v2 .dashboard-hero-note small{font-size:10px;line-height:1.45}
+.dashboard-v2 .dashboard-hero-grid{
+  opacity:.70;bottom:-21%;height:70%;
+  background-image:linear-gradient(rgba(74,158,232,.13) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(74,158,232,.13) 1px,transparent 1px);
+}
+.dashboard-v2 .dashboard-stage-floor{
+  bottom:12%;height:23%;opacity:.5;
+  background:radial-gradient(ellipse at center,rgba(40,131,210,.33),rgba(16,76,130,.11) 50%,transparent 75%);
+}
+.dashboard-v2 .dashboard-hero.mode-sleeping .dashboard-primary-car .dashboard-scene-car{
+  filter:brightness(.82) saturate(.85) drop-shadow(0 3px 4px rgba(0,0,0,.57));
+}
+@media(max-width:1180px){
+  .dashboard-v2 .dashboard-hero-copy h2{font-size:clamp(28px,3vw,42px)}
+  .dashboard-v2 .dashboard-dataflow{min-height:205px}
+  .dashboard-v2 .dashboard-dataflow li{font-size:9px}
+}
+@media(max-width:860px){
+  .dashboard-v2 .dashboard-hero-copy h2{font-size:clamp(29px,5vw,42px)}
+  .dashboard-v2 .dashboard-hero-metrics strong{font-size:clamp(14px,2vw,18px)}
+  .dashboard-v2 .dashboard-dataflow{min-height:0}
+}
+@media(min-width:1400px){
+  .dashboard-v2 .dashboard-hero-copy h2{
+    font-size:clamp(42px,3.12vw,53px);white-space:nowrap;
+  }
+}
+.dashboard-v2 .dashboard-hero-grid{
+  opacity:.58;bottom:-23%;height:66%;
+  background-image:linear-gradient(rgba(74,158,232,.10) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(74,158,232,.10) 1px,transparent 1px);
+}
+/* V0.1.1.82: actual front/rear tire pixel contacts are at approximately
+   (42%, 81%) and (87%, 70%) of the transparent Tesla car artwork.
+   The existing primary-car wrapper already matches the image's aspect ratio. */
+/* V0.1.1.84 | Refine only image-bound ground shadows. V83 car position is locked. */
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact{
+  position:absolute;z-index:1;inset:0;width:100%;height:100%;
+  /* V0.1.1.85: second, soft shadow directly under the chassis between both tires. */
+  background:
+    radial-gradient(ellipse 24% 3.5% at 61% 73%,rgba(0,0,0,.19) 0%,rgba(0,0,0,.11) 43%,transparent 100%),
+    radial-gradient(ellipse 34% 5% at 61% 75.5%,rgba(0,0,0,.30),transparent 100%);
+  border-radius:0;filter:none;pointer-events:none;
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact::before,
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact::after{
+  content:"";position:absolute;right:auto;bottom:auto;
+  border-radius:50%;background:rgba(0,0,0,.82);filter:blur(3px);
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact::before{
+  left:35.5%;top:77.8%;width:13.5%;height:4.4%;
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact::after{
+  left:82%;top:68.2%;width:11.5%;height:3.8%;
+}
+.dashboard-v2 .dashboard-primary-car .dashboard-scene-car{
+  position:relative;z-index:2;
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.78)) drop-shadow(0 7px 5px rgba(0,0,0,.28));
+}
+.dashboard-v2 .dashboard-hero.mode-sleeping .dashboard-primary-car .dashboard-scene-car{
+  filter:brightness(.82) saturate(.85) drop-shadow(0 2px 1px rgba(0,0,0,.84)) drop-shadow(0 7px 5px rgba(0,0,0,.30));
+}
+.dashboard-v2 .dashboard-hero.mode-charging .dashboard-primary-car .dashboard-scene-car{
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.76)) drop-shadow(0 7px 5px rgba(0,0,0,.26));
+}
+/* Hide stage-wide detached shadow, retain the subdued blue floor illumination. */
+.dashboard-v2 .dashboard-hero-stage::after{display:none!important}
+
+/* V0.1.1.86 | Dedicated sloped chassis-to-floor contact shadow, image-locked.
+   The darker center gently fades away; V84 tire contacts and V83 position stay untouched. */
+.dashboard-v2 .dashboard-primary-car .dashboard-chassis-contact{
+  display:block;
+  position:absolute;
+  z-index:1;
+  pointer-events:none;
+  left:46%;
+  top:68%;
+  width:42%;
+  height:12%;
+  border-radius:50%;
+  transform:rotate(-9deg);
+  transform-origin:50% 50%;
+  background:radial-gradient(ellipse at center,
+    rgba(0,0,0,.57) 0%,
+    rgba(0,0,0,.37) 37%,
+    rgba(0,0,0,.13) 69%,
+    transparent 100%);
+  filter:blur(7px);
+}
+
+/* V0.1.1.83 | Dashboard height calibration: lower the car 60px from V82.
+   The shadow is image-bound and moves together with its existing wrapper.
+   Tesla-browser/mobile breakpoints retain their established positioning. */
+@media (min-width: 1181px) {
+  .dashboard-v2 .dashboard-primary-car {
+    bottom: calc(9% - 60px);
+  }
+}

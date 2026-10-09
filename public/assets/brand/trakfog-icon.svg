@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">TrakFog Icon</title>
+<desc id="desc">A blue radar and location pin above a glowing road emerging from fog.</desc>
+<defs>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#61d8ff"/>
+    <stop offset=".48" stop-color="#159cff"/>
+    <stop offset="1" stop-color="#2169ff"/>
+  </linearGradient>
+  <linearGradient id="road" x1=".2" y1="0" x2=".8" y2="1">
+    <stop offset="0" stop-color="#0b1a32"/>
+    <stop offset="1" stop-color="#020913"/>
+  </linearGradient>
+  <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="7" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<rect width="512" height="512" rx="112" fill="#06111f"/>
+<circle cx="256" cy="250" r="188" fill="#07182d" stroke="#183d6c" stroke-width="8"/>
+<g fill="none" stroke-linecap="round">
+  <path d="M95 247a161 161 0 0 1 322 0" stroke="#0f65b6" stroke-width="17"/>
+  <path d="M128 247a128 128 0 0 1 256 0" stroke="#29c5ff" stroke-width="14" stroke-dasharray="78 36"/>
+  <path d="M164 247a92 92 0 0 1 184 0" stroke="#d7f7ff" stroke-width="10" stroke-dasharray="48 30"/>
+</g>
+<path d="M256 66c-52 0-94 41-94 92 0 70 94 151 94 151s94-81 94-151c0-51-42-92-94-92Z" fill="url(#blue)" stroke="#dff8ff" stroke-width="8" filter="url(#glow)"/>
+<circle cx="256" cy="157" r="37" fill="#07182d" stroke="#b9eeff" stroke-width="7"/>
+<g opacity=".76" fill="#5b779e">
+  <ellipse cx="145" cy="333" rx="90" ry="28"/>
+  <ellipse cx="366" cy="338" rx="104" ry="31"/>
+  <ellipse cx="252" cy="358" rx="188" ry="38"/>
+</g>
+<path d="M176 470c86-59 35-98 103-133 52-27 59-53 31-84" fill="none" stroke="#06101e" stroke-width="83" stroke-linecap="round"/>
+<path d="M176 470c86-59 35-98 103-133 52-27 59-53 31-84" fill="none" stroke="url(#blue)" stroke-width="12" stroke-linecap="round" filter="url(#glow)"/>
+<path d="M193 450c35-26 42-46 45-63M262 343c19-11 31-21 39-34" fill="none" stroke="#f6fdff" stroke-width="7" stroke-linecap="round"/>
+</svg>

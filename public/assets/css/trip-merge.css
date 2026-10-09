@@ -1,0 +1,156 @@
+/* Lossless consecutive-trip merge, V0.1.1.60 */
+.trip-merge-select{display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px;padding:7px 10px;border:1px solid rgba(90,150,200,.18);border-radius:9px;font-size:11px;color:#acc6da}
+.trip-merge-select input{accent-color:#159cff;width:16px;height:16px}
+.trip-merge-select:has(input:checked){border-color:#159cff;color:#e4f3ff;background:rgba(21,156,255,.12)}
+.trip-merge-suggestion .split-actions{justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.trip-merge-suggestion p{color:var(--muted);font-size:12px;line-height:1.5;margin:7px 0 0}
+.tf-merge-dialog{width:min(92vw,470px);border:1px solid rgba(46,163,255,.53);border-radius:15px;padding:24px;background:#101b28;color:#eff7ff;box-shadow:0 30px 85px #000a}
+.tf-merge-dialog::backdrop{background:#020813d9}
+.tf-merge-dialog h3{font-size:20px;margin:0 0 9px}
+.tf-merge-dialog p{color:#b2c6d7;line-height:1.55;margin-bottom:22px;font-size:13px}
+.tf-merge-dialog .split-actions{justify-content:flex-end;gap:10px}
+.trip-list .trip-card:has(.trip-merge-select input:checked){border-color:rgba(21,156,255,.7);box-shadow:0 0 0 1px rgba(21,156,255,.24)}
+
+/* Safe admin-only delete affordance. No destructive browser confirm and no backdrop close. */
+.trip-delete-inline{border:1px solid rgba(244,115,115,.30);background:rgba(155,32,47,.07);color:#ffbdc3;font-size:11px}
+.trip-delete-inline:hover,.trip-delete-inline:focus-visible{border-color:rgba(255,119,130,.72);color:#fff;background:rgba(182,40,54,.21)}
+.tf-delete-dialog{border-color:rgba(232,108,126,.43)}
+.tf-delete-dialog .trip-delete-confirm-label{display:flex;gap:10px;align-items:flex-start;margin:15px 0 24px;color:#e6cbd1;font-size:12px;line-height:1.5}
+.tf-delete-dialog .trip-delete-confirm-label input{margin-top:2px;accent-color:#f05c6c}
+.tf-delete-dialog .trip-delete-danger{background:#b73b4c;color:#fff;border:1px solid rgba(255,181,192,.36)}
+.tf-delete-dialog .trip-delete-danger:disabled{opacity:.36;cursor:not-allowed}
+.tf-delete-dialog .trip-delete-danger:not(:disabled):hover{background:#d3485b}
+
+/* V0.1.1.62: readable trip endpoints and unmistakable save flow. */
+.trip-merge-head-hint{color:var(--muted);font-size:12px;line-height:1.45}
+.trip-merge-instructions{display:flex;align-items:flex-start;flex-wrap:wrap;gap:5px 14px;margin:0 0 16px;padding:12px 15px;border:1px solid rgba(49,149,223,.23);border-radius:11px;background:rgba(21,112,181,.08)}
+.trip-merge-instructions strong{font-size:14px;color:#d9efff;white-space:nowrap}
+.trip-merge-instructions span{color:#b3cce0;font-size:13px;line-height:1.5}
+.trip-list .trip-merge-select{font-size:13px;padding:9px 12px;margin:11px 12px 0;color:#d1e4f3;gap:10px}
+.trip-list .trip-merge-select input{width:19px;height:19px;margin:0;cursor:pointer}
+.trip-list .trip-card-head strong{font-size:15px;line-height:1.4}
+.trip-list .trip-date{font-size:11px;letter-spacing:.03em}
+.trip-list .trip-metrics span{font-size:10px}
+.trip-list .trip-metrics b{font-size:15px}
+.trip-list .trip-foot{font-size:11px;line-height:1.5}
+.trip-list .trip-places-inline{display:grid;grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr);gap:12px;align-items:center;padding:14px 16px;margin:12px 0;background:rgba(24,37,50,.62)}
+.trip-list .trip-place-cell{min-width:0;display:flex;align-items:center;gap:12px}
+.trip-list .trip-place-icon{flex:0 0 31px;width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:rgba(20,143,235,.17);color:#71c3ff;border:1px solid rgba(84,167,235,.18);font-size:12px;font-weight:800}
+.trip-list .trip-place-icon.is-end{background:rgba(98,125,160,.15);color:#dce9f5}
+.trip-list .trip-place-content{min-width:0;display:flex;flex-direction:column;gap:3px}
+.trip-list .trip-place-heading{font-size:11px;color:#93acc2;font-weight:700;letter-spacing:.025em}
+.trip-list .trip-place-name{font-size:clamp(14px,1vw,16px);font-weight:750;color:#f0f7ff;line-height:1.4;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;max-width:100%;text-decoration:none}
+.trip-list .trip-place-name:hover,.trip-list .trip-place-name:focus-visible{color:#7ac6ff;text-decoration:underline}
+.trip-list .trip-place-arrow{display:block;text-align:center;color:#72bfff;font-size:19px;font-weight:800}
+.trip-merge-actionbar[hidden]{display:none!important}
+.trip-merge-actionbar{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:1050;width:min(860px,calc(100vw - 32px));display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 16px;background:rgba(11,25,39,.97);border:1px solid rgba(59,162,250,.65);border-radius:16px;box-shadow:0 14px 55px #000b,0 0 0 2px rgba(16,144,243,.06);backdrop-filter:blur(18px)}
+.trip-merge-action-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.trip-merge-action-copy strong{color:#eff9ff;font-size:16px;line-height:1.3}
+.trip-merge-action-copy span{color:#acc8dc;font-size:12px;line-height:1.35}
+.trip-merge-action-buttons{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.trip-merge-actionbar .btn{font-size:13px;padding:11px 15px;border-radius:10px}
+.trip-merge-actionbar .btn:disabled{opacity:.48;cursor:not-allowed;transform:none}
+.trip-merge-review{width:min(94vw,590px);max-height:min(85vh,700px);overflow-y:auto;border-color:rgba(67,171,255,.59);padding:24px 26px}
+.tf-merge-review-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.tf-merge-review-heading .kicker{font-size:11px;color:#74c3ff}
+.tf-merge-review-heading h3{margin:7px 0 10px;font-size:25px;letter-spacing:-.025em}
+.tf-merge-close{width:38px;height:38px;cursor:pointer;border:1px solid rgba(139,180,219,.2);background:rgba(255,255,255,.03);color:#d0e5f5;border-radius:10px;font-size:23px}
+.tf-merge-preview{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:10px;align-items:center;margin:15px 0 10px;border-radius:12px;background:rgba(23,48,72,.7);border:1px solid rgba(58,147,213,.27);padding:16px 18px}
+.tf-merge-preview-place{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tf-merge-preview-place span{color:#8eafc7;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.tf-merge-preview-place strong{font-size:16px;color:#f0f8ff;line-height:1.4;overflow-wrap:anywhere}
+.tf-merge-preview-arrow{text-align:center;color:#68baff;font-size:19px}
+.tf-merge-preview-info{font-size:14px;color:#b7d9ef;font-weight:600}
+.tf-merge-dialog .tf-merge-preservation{font-size:12px;line-height:1.6;color:#afc6d8;margin:14px 0 22px}
+.tf-merge-dialog-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.tf-merge-dialog-actions .btn{font-size:13px;line-height:1.45}
+.trip-merge-saved{font-size:14px;line-height:1.6}
+.trip-merge-saved strong{color:#c8fddc}
+@media(max-width:680px){
+ .trip-merge-actionbar{align-items:stretch;flex-direction:column;gap:12px;padding:13px}
+ .trip-merge-action-buttons{width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}
+ .trip-merge-actionbar .btn{padding:12px 9px;font-size:12px}
+ .trip-list .trip-places-inline{grid-template-columns:minmax(0,1fr);gap:7px;padding:14px}
+ .trip-list .trip-place-arrow{text-align:left;padding-left:11px;line-height:1}
+ .trip-list .trip-place-name{font-size:15px}
+ .trip-merge-review{padding:20px 17px}
+ .tf-merge-preview{grid-template-columns:1fr;gap:8px;padding:14px}
+ .tf-merge-preview-arrow{text-align:left}
+ .tf-merge-dialog-actions{display:grid;grid-template-columns:1fr}
+ .tf-merge-dialog-actions .btn{width:100%}
+}
+
+#tripMergeForm:has(.trip-merge-actionbar:not([hidden])) .trip-list{padding-bottom:115px}
+
+
+/* V0.1.1.65: compact trip list. Only the activated trip reveals full details. */
+.trip-merge-head-hint{font-size:11px}
+.trip-list{gap:7px}
+.trip-list .trip-card-compact{border-radius:11px;background:var(--surface-soft);overflow:hidden}
+.trip-compact-row{display:flex;align-items:center;gap:8px;min-width:0;padding:0 8px 0 10px}
+.trip-compact-select{display:grid;place-items:center;flex:0 0 27px;width:27px;height:44px;cursor:pointer}
+.trip-compact-select input{width:17px;height:17px;margin:0;accent-color:#159cff;cursor:pointer}
+.trip-compact-toggle{display:grid;grid-template-columns:minmax(132px,.7fr) minmax(220px,2fr) minmax(300px,1.85fr) 17px;align-items:center;gap:12px;width:100%;min-width:0;min-height:57px;padding:8px 8px;border:0;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.trip-compact-toggle:hover,.trip-compact-toggle:focus-visible{background:rgba(71,157,229,.065)}
+.trip-compact-toggle:focus-visible{outline:2px solid #54b5fc;outline-offset:-3px;border-radius:8px}
+.trip-compact-identity{display:flex;flex-direction:column;gap:3px;min-width:0}
+.trip-compact-identity strong{font-size:12px;line-height:1.22;color:var(--text)}
+.trip-compact-identity time{font-size:10px;line-height:1.2;color:var(--muted);font-weight:600}
+.trip-compact-route{display:flex;align-items:center;gap:8px;min-width:0;font-size:12px;font-weight:650;line-height:1.35}
+.trip-compact-route>span:not(.trip-compact-route-arrow){display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.trip-compact-route-arrow{flex:0 0 auto;color:#67bbff;font-size:16px}
+.trip-compact-facts{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+.trip-compact-facts>span{white-space:nowrap;font-size:10px;line-height:1.2;color:#cbddeb;border:1px solid rgba(135,164,190,.16);padding:5px 6px;border-radius:6px;background:rgba(8,20,31,.35)}
+.trip-compact-facts>span:first-child{color:#fff;font-weight:800}
+.trip-compact-facts .trip-compact-soc{color:#7fdaaa}
+.trip-compact-facts .trip-compact-soc-pause{color:#f4c779;border-color:rgba(244,199,121,.25);background:rgba(194,132,35,.09)}
+.trip-expanded-pause-note{margin:6px 0 10px;padding:8px 11px;border:1px solid rgba(244,199,121,.23);border-radius:8px;color:#f4d5a1;background:rgba(194,132,35,.07);font-size:12px;line-height:1.55}
+.trip-compact-chevron{color:#8eb3c8;display:inline-block;text-align:center;font-size:20px;transition:transform .15s}
+.trip-compact-toggle[aria-expanded="true"] .trip-compact-chevron{transform:rotate(180deg)}
+.trip-compact-live{white-space:nowrap;font-size:10px;margin-right:3px}
+.trip-expanded[hidden]{display:none!important}
+.trip-expanded{border-top:1px solid var(--line-soft);padding:11px 14px 12px;background:rgba(6,16,27,.25)}
+.trip-list .trip-expanded .trip-places-inline{padding:10px 12px;margin:0 0 10px;gap:8px}
+.trip-list .trip-expanded .trip-place-name{font-size:12px;line-height:1.45}
+.trip-expanded-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:11px}
+.trip-expanded-meta>span{min-width:0;display:flex;flex-direction:column;gap:5px;padding:9px 10px;border-radius:8px;background:rgba(20,37,54,.62);border:1px solid rgba(133,166,195,.12)}
+.trip-expanded-meta small{font-size:10px;color:var(--muted)}
+.trip-expanded-meta strong{font-size:12px;color:var(--text);font-weight:750;overflow-wrap:anywhere}
+.trip-expanded-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap}
+.trip-expanded-actions .btn{min-height:30px;padding:6px 10px;font-size:11px}
+.trip-list .trip-card:has(.trip-compact-select input:checked){border-color:#2b9bfa;box-shadow:0 0 0 1px rgba(39,159,246,.14)}
+.trip-merge-actionbar{width:min(700px,calc(100vw - 24px));gap:12px;padding:9px 12px;border-radius:12px}
+.trip-merge-action-copy strong{font-size:13px}
+.trip-merge-action-copy span{font-size:11px}
+.trip-merge-actionbar .btn{padding:8px 10px;font-size:11px}
+#tripMergeForm:has(.trip-merge-actionbar:not([hidden])) .trip-list{padding-bottom:85px}
+@media(max-width:1200px){
+ .trip-compact-toggle{grid-template-columns:minmax(112px,.7fr) minmax(220px,1.8fr) minmax(240px,1.5fr) 17px;gap:8px}
+ .trip-compact-facts>span{font-size:9px;padding:4px 5px}
+}
+@media(max-width:880px){
+ .trip-compact-toggle{grid-template-columns:minmax(90px,.6fr) minmax(0,2fr) 17px;row-gap:5px}
+ .trip-compact-facts{grid-column:1 / 3;grid-row:2}
+ .trip-compact-chevron{grid-column:3;grid-row:1 / 3}
+ .trip-compact-route{font-size:11px}
+ .trip-expanded-meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:540px){
+ .trip-compact-row{gap:4px;padding:0 5px}
+ .trip-compact-select{flex-basis:25px;width:25px}
+ .trip-compact-toggle{grid-template-columns:minmax(80px,1fr) 18px;min-height:67px;gap:5px 7px;padding:8px 3px}
+ .trip-compact-identity{grid-column:1;grid-row:1}
+ .trip-compact-route{grid-column:1;grid-row:2;font-size:11px}
+ .trip-compact-facts{grid-column:1 / 3;grid-row:3;gap:4px}
+ .trip-compact-facts>span{font-size:9px}
+ .trip-compact-chevron{grid-column:2;grid-row:1 / 3}
+ .trip-compact-live{font-size:9px;padding:3px}
+ .trip-expanded{padding:9px}
+ .trip-list .trip-expanded .trip-places-inline{grid-template-columns:1fr;padding:9px}
+ .trip-list .trip-expanded .trip-place-arrow{padding:0 0 0 12px}
+ .trip-expanded-actions{justify-content:flex-start}
+ .trip-expanded-actions .btn{flex:1 1 auto}
+ .trip-merge-actionbar{align-items:stretch;flex-direction:column;gap:7px;padding:10px}
+ .trip-merge-action-buttons{display:flex;width:100%}
+ .trip-merge-action-buttons .btn{flex:1}
+}

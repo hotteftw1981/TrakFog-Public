@@ -1,0 +1,43 @@
+CREATE TABLE IF NOT EXISTS vehicle_state_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id BIGINT UNSIGNED NOT NULL,
+    observed_at DATETIME NOT NULL,
+    from_state VARCHAR(40) NULL,
+    to_state VARCHAR(40) NOT NULL,
+    source VARCHAR(40) NOT NULL DEFAULT 'tesla_products',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_state_event_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
+    INDEX idx_state_event_vehicle_time (vehicle_id, observed_at),
+    INDEX idx_state_event_state_time (to_state, observed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sleep_sessions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id BIGINT UNSIGNED NOT NULL,
+    started_at DATETIME NOT NULL,
+    ended_at DATETIME NULL,
+    start_state VARCHAR(40) NULL,
+    end_state VARCHAR(40) NULL,
+    start_soc DECIMAL(5,2) NULL,
+    end_soc DECIMAL(5,2) NULL,
+    start_range_km DECIMAL(10,2) NULL,
+    end_range_km DECIMAL(10,2) NULL,
+    start_odometer_km DECIMAL(12,3) NULL,
+    end_odometer_km DECIMAL(12,3) NULL,
+    duration_seconds BIGINT UNSIGNED NULL,
+    soc_delta DECIMAL(7,2) NULL,
+    range_delta_km DECIMAL(10,2) NULL,
+    drain_percent DECIMAL(7,2) NULL,
+    drain_range_km DECIMAL(10,2) NULL,
+    drain_percent_per_day DECIMAL(9,3) NULL,
+    moved_km DECIMAL(10,3) NULL,
+    had_charge TINYINT(1) NOT NULL DEFAULT 0,
+    quality VARCHAR(32) NOT NULL DEFAULT 'pending',
+    excluded_reason VARCHAR(64) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sleep_session_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
+    INDEX idx_sleep_vehicle_start (vehicle_id, started_at),
+    INDEX idx_sleep_vehicle_end (vehicle_id, ended_at),
+    INDEX idx_sleep_quality_start (quality, started_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

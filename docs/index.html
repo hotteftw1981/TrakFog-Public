@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#06111f">
+<meta name="description" content="TrakFog – selbst gehostetes Tesla-Tracking und Analyse mit LiveView, Fahrten, Ladungen, Reisen und NerdView.">
+<title>TrakFog · Your Tesla. Your data. Your history.</title>
+<link rel="icon" type="image/svg+xml" href="assets/trakfog-icon.svg">
+<style>
+:root{color-scheme:dark;--bg:#030913;--bg2:#071321;--panel:#0b1726;--panel2:#0e1d2e;--line:#19324c;--text:#f4f8ff;--muted:#91a4ba;--blue:#1ea8ff;--cyan:#4ed7ff;--green:#31d48c;--amber:#ffb54a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 82% 0,rgba(30,168,255,.18),transparent 28%),radial-gradient(circle at 14% 18%,rgba(67,120,255,.14),transparent 24%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:inherit}.wrap{width:min(1180px,calc(100% - 32px));margin:auto}
+.top{position:sticky;top:0;z-index:30;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(3,9,19,.80);backdrop-filter:blur(18px)}
+.nav{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand img{width:190px;display:block}.links{display:flex;gap:18px;color:var(--muted);font-size:12px;font-weight:700}.links a{text-decoration:none}.links a:hover{color:var(--text)}
+.hero{padding:56px 0 34px}.hero-grid{display:grid;grid-template-columns:1.02fr .98fr;gap:38px;align-items:center}.eyebrow{display:inline-flex;align-items:center;gap:7px;color:var(--cyan);font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.hero h1{margin:14px 0 16px;font-size:clamp(48px,7vw,88px);line-height:.94;letter-spacing:-.06em}.hero h1 span{background:linear-gradient(135deg,#f8fdff,#83dfff 48%,#187dff);-webkit-background-clip:text;background-clip:text;color:transparent}.hero p{max-width:680px;margin:0;color:var(--muted);font-size:18px}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:26px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 15px;border:1px solid var(--line);border-radius:10px;background:var(--panel);text-decoration:none;font-size:12px;font-weight:850}.btn.primary{border-color:rgba(30,168,255,.6);background:linear-gradient(135deg,#167de8,#1eafff)}.btn:hover{transform:translateY(-1px);border-color:#2d5c83}
+.visual{position:relative;min-height:480px;border:1px solid #173b5e;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 22%,rgba(57,190,255,.24),transparent 28%),linear-gradient(180deg,#0c1d32,#040a12 74%);box-shadow:0 34px 90px rgba(0,0,0,.45)}
+.visual:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,transparent 0 48%,rgba(72,166,255,.08) 49% 51%,transparent 52%);opacity:.7}.mist{position:absolute;left:-8%;right:-8%;bottom:20%;height:120px;background:radial-gradient(ellipse at center,rgba(126,169,210,.28),transparent 66%);filter:blur(14px)}
+.radar{position:absolute;left:50%;top:43%;width:350px;height:350px;transform:translate(-50%,-50%);border:1px solid rgba(65,179,255,.22);border-radius:50%;box-shadow:inset 0 0 70px rgba(27,137,255,.07)}.radar:before,.radar:after{content:"";position:absolute;border:12px solid transparent;border-top-color:#1fb7ff;border-radius:50%;inset:44px;opacity:.72}.radar:after{inset:88px;border-width:8px;border-top-color:#d4f7ff;opacity:.6}
+.pin{position:absolute;left:50%;top:14%;transform:translateX(-50%);width:70px;height:88px;border-radius:42px 42px 48px 48px;background:linear-gradient(150deg,#eafaff,#19baff 56%,#216bff);clip-path:polygon(50% 100%,6% 44%,8% 22%,22% 7%,50% 0,78% 7%,92% 22%,94% 44%);filter:drop-shadow(0 0 18px rgba(35,186,255,.6))}.pin:after{content:"";position:absolute;left:24px;top:18px;width:22px;height:22px;border-radius:50%;background:#071423}
+.road{position:absolute;left:50%;bottom:-55px;width:185px;height:390px;transform:translateX(-50%) perspective(420px) rotateX(56deg);border-radius:50% 50% 0 0;background:linear-gradient(90deg,#07101d 0 44%,#e8fbff 45% 47%,#1bb7ff 48% 52%,#e8fbff 53% 55%,#07101d 56%);box-shadow:0 0 30px rgba(26,172,255,.45)}
+.car{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:205px;height:74px;border-radius:60% 60% 30% 30%/80% 80% 35% 35%;background:linear-gradient(180deg,#eefbff,#91bfe8 60%,#183c62);box-shadow:0 14px 35px rgba(0,0,0,.55),0 0 24px rgba(77,190,255,.16)}.car:before{content:"";position:absolute;left:44px;right:44px;top:7px;height:26px;border-radius:30px 30px 5px 5px;background:#071525}.car:after{content:"";position:absolute;left:22px;right:22px;bottom:17px;height:5px;background:linear-gradient(90deg,#c9f5ff 0 20%,transparent 20% 80%,#c9f5ff 80%);filter:drop-shadow(0 0 7px #66dfff)}
+.hero-logo{position:absolute;left:20px;bottom:17px;width:210px;opacity:.94}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.badge{padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#0b1726;color:var(--muted);font-size:11px;font-weight:800}.badge b{color:var(--text)}.badge.ok{border-color:rgba(49,212,140,.35);color:#7ee8b5}
+section{padding:64px 0}.section-head{max-width:760px;margin-bottom:24px}.section-head h2{margin:7px 0 8px;font-size:clamp(28px,4vw,46px);letter-spacing:-.04em}.section-head p{margin:0;color:var(--muted)}
+.quick,.features,.branch-grid{display:grid;gap:11px}.quick{grid-template-columns:repeat(7,1fr)}.quick a,.feature,.branch{border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,var(--panel),#08111d);text-decoration:none}.quick a{min-height:105px;padding:14px;display:grid;align-content:space-between;gap:10px}.quick i,.feature i{font-style:normal;font-size:23px}.quick strong{font-size:12px}.quick small,.feature p,.branch p{color:var(--muted);font-size:11px}
+.features{grid-template-columns:repeat(3,1fr)}.feature{min-height:176px;padding:18px}.feature h3{margin:12px 0 6px}.feature p{margin:0;font-size:12px}
+.branch-grid{grid-template-columns:1fr 1fr}.branch{padding:18px}.branch.stable{border-color:rgba(49,212,140,.42);background:linear-gradient(145deg,rgba(27,102,72,.25),#07131c)}.branch.main{border-color:rgba(30,168,255,.42);background:linear-gradient(145deg,rgba(20,77,140,.25),#07131c)}.branch-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.branch h3{margin:0}.pill{padding:4px 8px;border-radius:99px;background:#11304a;color:#9fdcff;font-size:10px;font-weight:850}.stable .pill{background:#123d2c;color:#8af1bc}
+.install{display:grid;grid-template-columns:1fr .9fr;gap:18px;align-items:stretch}.install-card,.code{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:20px}.install-card ol{margin:12px 0 0;padding-left:20px;color:var(--muted)}.install-card li{margin:8px 0}.code{background:#050b13;font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:#9fb1c4}.code b{color:#fff}.code .b{color:#63d5ff}.code .g{color:#62e6a4}
+.notice{padding:16px 18px;border:1px solid rgba(255,181,74,.32);border-radius:14px;background:rgba(255,181,74,.06);color:#e2cda9}.notice strong{color:#ffd08b}
+footer{padding:36px 0 50px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}.footer img{width:150px}
+@media(max-width:950px){.hero-grid,.install{grid-template-columns:1fr}.visual{min-height:430px}.quick{grid-template-columns:repeat(3,1fr)}.features{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.links{display:none}.hero{padding-top:36px}.hero h1{font-size:52px}.visual{min-height:390px}.quick,.features,.branch-grid{grid-template-columns:1fr}.brand img{width:160px}.radar{width:300px;height:300px}.car{width:180px}.hero-logo{width:170px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap nav"><a class="brand" href="#top"><img src="assets/trakfog-logo.svg" alt="TrakFog"></a><nav class="links"><a href="#features">Highlights</a><a href="#migration">Datenmigration</a><a href="#liveview">LiveView</a><a href="#install">Installation</a><a href="#branches">Branches</a><a href="#license">Lizenz</a></nav></div></header>
+<main id="top">
+<section class="hero"><div class="wrap hero-grid">
+<div>
+<span class="eyebrow">◉ Self-hosted Tesla tracking</span>
+<h1>Mehr als<br><span>nur Fahrten.</span></h1>
+<p>TrakFog sammelt Live-Telemetrie, Fahrten, Ladevorgänge, Reisen und Langzeitdaten in deiner eigenen Docker-Umgebung – Portainer ist optional und eine kostenpflichtige Fleet API keine Voraussetzung.</p>
+<div class="actions"><a class="btn primary" href="#install">🚀 Installation ansehen</a><a class="btn" href="https://github.com/hotteftw1981/TrakFog-Public">GitHub Repository ↗</a></div>
+<div class="badges"><span class="badge"><b>V0.1.1.89</b></span><span class="badge">Public Beta</span><span class="badge ok">AGPL-3.0-only</span><span class="badge">🐳 Docker ready</span></div>
+</div>
+<div class="visual" aria-label="Stilisierte TrakFog Projektillustration"><div class="radar"></div><div class="pin"></div><div class="mist"></div><div class="road"></div><div class="car"></div><img class="hero-logo" src="assets/trakfog-logo.svg" alt=""></div>
+</div></section>
+
+<section><div class="wrap"><div class="section-head"><span class="eyebrow">🔗 Schnellzugriff</span><h2>Die wichtigen Wege zuerst.</h2></div><div class="quick">
+<a href="#install"><i>🚀</i><span><strong>Installation</strong><br><small>Docker Compose</small></span></a>
+<a href="#migration"><i>↔</i><span><strong>Datenmigration</strong><br><small>TeslaMate & TrakFog</small></span></a>
+<a href="#liveview"><i>📺</i><span><strong>LiveView</strong><br><small>Direktzugang per PIN</small></span></a>
+<a href="https://github.com/hotteftw1981/TrakFog-Public/releases"><i>🔄</i><span><strong>Releases</strong><br><small>Stable Builds</small></span></a>
+<a href="https://github.com/hotteftw1981/TrakFog-Public/blob/stable/docker/DOCKER.md"><i>🐳</i><span><strong>Docker</strong><br><small>Setup-Guide</small></span></a>
+<a href="https://github.com/hotteftw1981/TrakFog-Public/blob/stable/CHANGELOG.md"><i>🧾</i><span><strong>Changelog</strong><br><small>Versionshistorie</small></span></a>
+<a href="#branches"><i>🌿</i><span><strong>Branches</strong><br><small>stable vs. main</small></span></a>
+<a href="#license"><i>⚖️</i><span><strong>Lizenz</strong><br><small>AGPL-3.0</small></span></a>
+</div></div></section>
+
+<section id="features"><div class="wrap"><div class="section-head"><span class="eyebrow">⭐ Highlights</span><h2>Deine Tesla-Daten, sinnvoll zusammengesetzt.</h2><p>TrakFog verbindet aktuelle Fahrzeugdaten mit einer langfristig nutzbaren Historie und einer Oberfläche, die vom Desktop bis zum Tesla-Browser funktioniert.</p></div><div class="features">
+<article class="feature"><i>📡</i><h3>Live-Daten</h3><p>Fahrzeugzustand, Position, Akku, Geschwindigkeit, Leistung, Temperaturen und mehr.</p></article>
+<article class="feature"><i>🛣️</i><h3>Fahrten & Historie</h3><p>Automatische Fahrterkennung, Routen, Verbrauch, Zeiten und Detailansichten.</p></article>
+<article class="feature"><i>⚡</i><h3>Laden & Kosten</h3><p>Ladekurven, Energie, Standorte und Tesla-Supercharger-Kostensync, wenn verfügbar.</p></article>
+<article class="feature"><i>🗺️</i><h3>Live Map & Reisen</h3><p>Zentrierter Tesla mit Fahrfaden, Geofences, Reise-Timeline und Gesamtkarte.</p></article>
+<article class="feature"><i>🧠</i><h3>NerdView</h3><p>Technische Fahrzeug-, Lade-, Klima- und Positionsdaten in einer eigenen Ansicht.</p></article>
+<article class="feature"><i>⬆️</i><h3>Stable Self-Updates</h3><p>GitHub Releases, eigener Docker-Updater, Migrationen und Versionsbestätigung aus einem Update-Center – ohne Portainer-Zwang.</p></article>
+<article class="feature"><i>↔</i><h3>Datenmigration</h3><p>TeslaMate-Backups direkt übernehmen und TrakFog-Daten als portables ZIP exportieren oder wieder importieren.</p></article>
+<article class="feature"><i>🔗</i><h3>Integration API</h3><p>SoC, Ziel-SoC, Ladezustand und Fahrzeugstatus sicher an Systeme wie VoltCore bereitstellen – ohne Tesla-Tokens weiterzugeben.</p></article>
+<article class="feature"><i>🧭</i><h3>Ersteinrichtung</h3><p>Frische Docker-Instanzen führen sicher durch Systemcheck, ersten Owner, optionale Tesla-Verbindung und Datenübernahme.</p></article>
+<article class="feature"><i>🌌</i><h3>Living Dashboard</h3><p>Mehrere Teslas nebeneinander auswählen und den aktuellen Fahrzeugzustand in einer lebendigen, statusabhängigen Hero-Bühne erleben.</p></article>
+</div></div></section>
+
+<section id="migration"><div class="wrap"><div class="section-head"><span class="eyebrow">↔ Datenmigration</span><h2>Historie mitnehmen statt neu anfangen.</h2><p>TrakFog besitzt ein eigenes Import-/Export-Center für den Wechsel aus anderen Tesla-Loggern und für portable TrakFog-Umzüge.</p></div>
+<div class="install">
+<div class="install-card">
+<h3>Heute bereits aktiv</h3>
+<ol>
+<li><b>TeslaMate</b>-PostgreSQL-Backup / <code>.bck</code> hochladen.</li>
+<li>TrakFog erkennt Fahrzeuge, Fahrten, Positionshistorie, Laden, Orte und Zustände.</li>
+<li>VIN-basierte Zuordnung und Dubletten-Schutz prüfen vorhandene Historie.</li>
+<li>Große Importe laufen im Hintergrund mit Fortschrittsanzeige weiter.</li>
+<li>TrakFog selbst kann als portables ZIP exportiert und auf einer anderen Installation wieder importiert werden.</li>
+</ol>
+</div>
+<div class="code"><b>Migrationsmodell</b><br><span class="b">TeslaMate</span> → aktiv<br><span class="g">TrakFog Export / Import</span> → aktiv<br><br>TeslaLogger → vorbereitet<br>TeslaFi → vorbereitet<br>Tessie → vorbereitet<br>Teslascope → vorbereitet<br>TRONITY → vorbereitet<br>TezLab → vorbereitet<br>CSV / JSON / TeslaPy → vorbereitet<br><br><b>Export enthält keine Tokens oder Passwörter.</b></div>
+</div></div></section>
+
+<section id="liveview"><div class="wrap"><div class="section-head"><span class="eyebrow">📺 LiveView-Zugang</span><h2>Ein Link. Eine PIN. Kein Backend-Login.</h2><p>LiveView ist für Tesla-Browser, Tablet, TV und Wanddisplay gedacht und bewusst vom normalen TrakFog-Benutzerlogin getrennt.</p></div>
+<div class="install">
+<div class="install-card">
+<h3>So einfach geht es</h3>
+<ol>
+<li>Im gewünschten Browser <b>/live.php</b> deiner TrakFog-Domain öffnen.</li>
+<li>Im PIN-Modus die konfigurierte <b>sechsstellige LiveView-PIN</b> eingeben.</li>
+<li>Optional <b>Gerät merken</b> aktivieren.</li>
+<li>Danach öffnet dieses vertrauenswürdige Gerät LiveView innerhalb der konfigurierten Dauer ohne erneute PIN.</li>
+</ol>
+<p style="color:var(--muted);font-size:12px">Normale TrakFog-Zugangsdaten werden für LiveView nicht benötigt. Vertrauenswürdige Geräte können im Backend jederzeit einzeln oder gesammelt widerrufen werden.</p>
+</div>
+<div class="code"><b>Direktzugang</b><br><span class="b">https://deine-domain/live.php</span><br><br>
+<b>Modi</b><br><span class="g">PIN</span> → 6-stellige LiveView-PIN<br>Offen → direkter Zugriff<br>Deaktiviert → kein Zugriff<br><br>
+<b>Tesla-Schlaf</b><br>LiveView liest gespeicherte Daten.<br>Ein offenes Display weckt das Fahrzeug nicht zusätzlich auf.</div>
+</div></div></section>
+
+<section id="branches"><div class="wrap"><div class="section-head"><span class="eyebrow">🌿 Release-Modell</span><h2>Zwei Branches. Zwei klare Aufgaben.</h2></div><div class="branch-grid">
+<article class="branch stable"><div class="branch-top"><h3>stable</h3><span class="pill">Community</span></div><p>Veröffentlichte, geprüfte Releases. Dieser Branch ist für Installation und integrierte Updates vorgesehen.</p></article>
+<article class="branch main"><div class="branch-top"><h3>main</h3><span class="pill">Entwicklung</span></div><p>Aktueller Entwicklungsstand für Tests und neue Funktionen. Nicht die allgemeine Installationsquelle.</p></article>
+</div></div></section>
+
+<section id="install"><div class="wrap"><div class="section-head"><span class="eyebrow">🚀 Installation</span><h2>Docker Compose first.</h2><p>Die Installation folgt dem veröffentlichten <code>stable</code>-Branch. Portainer bleibt eine optionale Oberfläche.</p></div><div class="install">
+<div class="install-card"><h3>Docker Compose Kurzstart</h3><ol><li>Repository <b>hotteftw1981/TrakFog-Public</b> klonen.</li><li>Auf den Branch <b>stable</b> wechseln.</li><li><code>.env.example</code> nach <code>.env</code> kopieren und sichere DB-Werte setzen.</li><li><code>docker compose up -d --build</code> ausführen.</li><li>Im Webcontainer den einmaligen Setup-Schlüssel lokal abfragen und damit Owner/Tesla/Datenübernahme im Wizard einrichten.</li><li>Reverse Proxy/HTTPS final prüfen.</li></ol><div class="actions"><a class="btn primary" href="https://github.com/hotteftw1981/TrakFog-Public/blob/stable/docker/DOCKER.md">Docker-Anleitung ↗</a><a class="btn" href="https://github.com/hotteftw1981/TrakFog-Public/blob/stable/docker/PORTAINER.md">Portainer optional ↗</a></div></div>
+<div class="code"><b>TrakFog Stack</b><br><span class="b">trakfog-web</span> → PHP 8.4 / Apache<br><span class="g">trakfog-worker</span> → Datendienst / Telemetrie<br>trakfog-db → MariaDB<br>trakfog-updater → interner Stable-Updater<br><br>Updates → Stable GitHub Release<br>Deployment → Docker Compose<br>Portainer → optional<br>Lizenz → AGPL-3.0-only</div>
+</div></div></section>
+
+<section id="license"><div class="wrap"><div class="section-head"><span class="eyebrow">⚖️ Open Source</span><h2>AGPL-3.0-only.</h2><p>TrakFog darf genutzt, verändert und weiterentwickelt werden. Die GNU Affero General Public License sorgt insbesondere bei netzwerkbasierten Diensten dafür, dass entsprechende Änderungen nicht einfach vollständig geschlossen verschwinden.</p></div><div class="notice"><strong>Hinweis:</strong> TrakFog ist ein unabhängiges Projekt und nicht mit Tesla, Inc. verbunden. Tesla-Zugänge und Endpoints können sich ändern.</div><div class="actions"><a class="btn" href="https://github.com/hotteftw1981/TrakFog-Public/blob/stable/LICENSE">Lizenztext ansehen ↗</a><a class="btn" href="https://github.com/hotteftw1981/TrakFog-Public/blob/stable/README.md">README öffnen ↗</a><a class="btn" href="https://github.com/hotteftw1981/TrakFog-Public/blob/stable/docs/PRIVACY.md">Datenflüsse ↗</a></div></div></section>
+</main>
+<footer><div class="wrap footer"><span><img src="assets/trakfog-logo.svg" alt="TrakFog"></span><span>Entwicklung & Konzeption: Patrick Garbe</span></div></footer>
+</body>
+</html>

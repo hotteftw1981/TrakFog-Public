@@ -1,0 +1,706 @@
+/* TrakFog LiveView vehicle scene V0.1.1.75
+   Uses only bundled local Model 3/Y/S/X artwork. No external image URLs,
+   WebGL or additional Tesla calls. Scoped to the optional vehicle scene. */
+.live-root.lv-vehicle-visualization .lv-drive-card{
+  grid-template-columns:clamp(75px,9vw,112px) minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr) auto auto;
+  gap:clamp(7px,.8vw,12px);
+  padding:clamp(10px,1.1vw,18px);
+  align-content:stretch;
+  align-items:stretch;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card>.lv-card-head{
+  grid-column:1/-1;grid-row:1;align-self:start;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene{
+  grid-column:1/-1;grid-row:2;
+  position:relative;isolation:isolate;
+  min-width:0;min-height:0;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(69,153,212,.24);
+  border-radius:clamp(12px,1vw,19px);
+  background:radial-gradient(ellipse at 51% 83%,rgba(35,117,194,.14),transparent 66%),
+             linear-gradient(155deg,rgba(7,25,41,.88),rgba(4,13,25,.97));
+  --scene-halo:rgba(63,165,248,.26);
+  --scene-tint:rgba(67,157,218,.23);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="sleeping"]{
+  --scene-halo:rgba(51,105,150,.13);--scene-tint:rgba(51,100,140,.10);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="charging"]{
+  --scene-halo:rgba(40,222,162,.29);--scene-tint:rgba(36,208,155,.20);
+  border-color:rgba(52,196,145,.31);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="driving"]{
+  --scene-halo:rgba(73,178,255,.28);--scene-tint:rgba(49,177,255,.19);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="stale"]{
+  --scene-halo:rgba(93,117,135,.09);--scene-tint:rgba(73,97,117,.08);
+}
+.lv-car-scene-horizon,.lv-car-scene-glow,.lv-car-scene-road,.lv-car-scene-energy{
+  position:absolute;pointer-events:none;
+}
+.lv-car-scene-horizon{
+  z-index:0;top:64%;left:8%;width:84%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(115,189,238,.23),transparent);
+}
+.lv-car-scene-glow{
+  z-index:0;left:8%;right:8%;top:27%;bottom:7%;
+  border-radius:50%;filter:blur(clamp(15px,3vw,38px));
+  background:radial-gradient(ellipse,var(--scene-halo),transparent 67%);
+  transition:background .65s ease,opacity .65s ease;
+}
+.lv-car-scene-road{
+  z-index:0;bottom:13%;left:23%;width:54%;height:17%;border-radius:50%;
+  transform:perspective(320px) rotateX(70deg);
+  background:radial-gradient(ellipse,var(--scene-tint),transparent 73%);
+}
+.lv-car-scene-energy{
+  z-index:0;inset:14% 8% 13%;
+  opacity:0;
+  border:1px solid rgba(84,238,180,.19);
+  border-radius:50%;
+  transform:perspective(430px) rotateX(64deg);
+  box-shadow:0 0 18px rgba(46,205,149,.13);
+}
+.lv-car-scene-image{
+  z-index:1;position:absolute;
+  top:11%;left:9%;
+  width:82%;height:79%;max-width:none;
+  object-fit:contain;object-position:center center;
+  filter:drop-shadow(0 12px 18px rgba(0,0,0,.42));
+  transition:opacity .6s ease,filter .6s ease,transform .6s ease;
+  pointer-events:none;user-select:none;
+}
+.lv-car-scene-image[hidden],.lv-car-scene-fallback[hidden]{display:none!important}
+.lv-car-scene-fallback{
+  z-index:1;font-size:clamp(38px,5vw,78px);
+  font-weight:560;letter-spacing:.22em;
+  color:rgba(127,173,207,.27);pointer-events:none;
+}
+.lv-car-scene-identity,.lv-car-scene-state{
+  position:absolute;z-index:2;pointer-events:none;
+  padding:6px 9px;border:1px solid rgba(111,181,218,.22);
+  border-radius:9px;background:rgba(5,18,31,.73);
+  backdrop-filter:blur(5px);
+}
+.lv-car-scene-identity{
+  left:12px;top:12px;display:grid;gap:3px;
+  max-width:45%;
+}
+.lv-car-scene-identity strong{
+  color:#f4f9ff;font-size:clamp(12px,1vw,16px);
+  font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.lv-car-scene-identity span{
+  color:#86b9dd;font-size:clamp(9px,.75vw,11px);
+  letter-spacing:.12em;font-weight:700;
+}
+.lv-car-scene-state{
+  top:12px;right:12px;color:#bbdff5;
+  font-size:clamp(10px,.78vw,12px);font-weight:700;
+}
+.lv-car-scene[data-mode="charging"] .lv-car-scene-state{
+  color:#89f2bd;border-color:rgba(66,219,158,.38);
+}
+.lv-car-scene[data-mode="sleeping"] .lv-car-scene-image{
+  filter:brightness(.60) saturate(.67) drop-shadow(0 12px 18px rgba(0,0,0,.43));
+}
+.lv-car-scene[data-mode="stale"] .lv-car-scene-image{
+  opacity:.6;filter:grayscale(.65) brightness(.65) drop-shadow(0 12px 16px rgba(0,0,0,.44));
+}
+.lv-car-scene[data-mode="charging"] .lv-car-scene-energy{opacity:.85}
+.lv-car-scene[data-mode="driving"] .lv-car-scene-road{
+  background:repeating-linear-gradient(100deg,transparent 0 15%,rgba(100,194,255,.14) 18%,transparent 20% 35%);
+  opacity:.75;
+}
+/* Car artwork stays stationary to avoid distracting a moving vehicle. */
+.lv-car-scene[data-motion="subtle"][data-mode="charging"] .lv-car-scene-energy{
+  animation:lv-car-charge 4s ease-in-out infinite;
+}
+.lv-car-scene[data-motion="subtle"][data-mode="parked"] .lv-car-scene-glow{
+  animation:lv-car-rest 9s ease-in-out infinite;
+}
+@keyframes lv-car-charge{0%,100%{opacity:.35}50%{opacity:.9}}
+@keyframes lv-car-rest{0%,100%{opacity:.42}50%{opacity:.78}}
+.lv-car-scene[data-motion="off"] .lv-car-scene-glow,
+.lv-car-scene[data-motion="off"] .lv-car-scene-energy{
+  animation:none!important;transition:none!important;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge{
+  grid-column:1;grid-row:3;
+  width:clamp(75px,9vw,104px);height:auto;max-width:100%;
+  min-width:0;aspect-ratio:1;
+  justify-self:center;align-self:center;
+  margin:0;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge-inner{
+  inset:clamp(5px,.7vw,9px);gap:2px;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge .lv-hero-value strong{
+  font-size:clamp(35px,4.2vw,55px);line-height:.95;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge .lv-hero-value span{
+  font-size:clamp(9px,.75vw,12px);padding:0;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge[data-mode="sleeping"] .lv-hero-value strong,
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge[data-mode="stale"] .lv-hero-value strong{
+  font-size:clamp(30px,3vw,40px);
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-gear{min-height:12px;gap:3px}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-gear span{font-size:7px}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-gear b{font-size:14px;min-width:0}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-scale{display:none}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-row{
+  grid-column:2;grid-row:3;
+  width:100%;max-width:none;min-width:0;
+  justify-self:stretch;align-self:center;
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:clamp(6px,.8vw,13px);
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance{
+  min-width:0;
+  padding:clamp(6px,.65vw,11px);gap:clamp(5px,.6vw,10px);
+  border:1px solid rgba(98,172,218,.20);border-radius:12px;
+  grid-template-columns:auto minmax(0,1fr);
+  background:rgba(10,28,45,.8);
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring{
+  width:clamp(47px,5.5vw,68px);min-width:0;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring strong{font-size:clamp(17px,1.8vw,25px)}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring span{font-size:8px}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta b{
+  font-size:clamp(13px,1.35vw,21px);
+  font-weight:620;line-height:1.15;
+  overflow-wrap:anywhere;white-space:normal;text-overflow:clip;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta span{
+  font-size:clamp(8px,.7vw,10px);
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-hero-sub{
+  grid-column:1/-1;grid-row:4;min-width:0;
+  font-size:clamp(10px,.85vw,13px);
+  color:#a4bfd4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+/* Tesla Standard: keep the art dominant without hiding the live readings. */
+@media(max-width:1099px){
+  .live-root.lv-vehicle-visualization .lv-drive-card{
+    grid-template-columns:clamp(66px,8vw,84px) minmax(0,1fr);
+    padding:9px 10px;gap:6px;
+  }
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge{
+    width:clamp(65px,8vw,82px);
+  }
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge .lv-hero-value strong{
+    font-size:clamp(28px,3.2vw,39px);
+  }
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance{
+    padding:5px;gap:5px;
+  }
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring{
+    width:clamp(42px,5.3vw,54px);
+  }
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta b{
+    font-size:clamp(11px,1.7vw,15px);font-weight:620;
+  }
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta span{font-size:8px}
+  .lv-car-scene-identity{left:7px;top:7px;padding:5px 7px}
+  .lv-car-scene-state{right:7px;top:7px;padding:5px 7px}
+}
+@media(max-width:700px){
+  .live-root.lv-vehicle-visualization .lv-drive-card{
+    grid-template-columns:68px minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr) auto auto;
+  }
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge{width:66px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-row{gap:4px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring{width:40px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta b{font-size:11px}
+  .lv-car-scene-image{width:90%;left:5%}
+}
+@media(max-height:620px) and (orientation:landscape){
+  .live-root.lv-vehicle-visualization .lv-drive-card{gap:4px;padding:7px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge{width:66px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance{padding:4px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring{width:40px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta b{font-size:11px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-hero-sub{font-size:10px}
+}
+.lv-info-garage-setting{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:9px;color:#b4cfdf;font-size:11px;
+}
+.lv-info-garage-setting button{
+  min-height:32px;padding:6px 12px;border-radius:9px;
+  border:1px solid rgba(87,170,223,.37);
+  background:rgba(21,55,78,.9);color:#d5f0ff;
+  font:inherit;font-weight:650;cursor:pointer;
+}
+.lv-info-garage-setting button[aria-pressed="false"]{
+  color:#a5b4c2;background:rgba(19,30,43,.8);
+}
+.lv-info-garage-setting button:focus-visible{
+  outline:2px solid #72d2ff;outline-offset:2px;
+}
+@media(prefers-reduced-motion:reduce){
+  .lv-car-scene *{animation:none!important;transition:none!important}
+}
+
+/* V0.1.1.77 – 20% smaller vehicle, grounded platform and wheel contact.
+   Deliberately overrides the earlier car scene sizes at the END of the file. */
+.live-root.lv-vehicle-visualization .lv-car-scene-image{
+  left:17%;top:20%;width:66%;height:65%; /* 82% -> 66% = 19.5% smaller */
+  object-fit:contain;
+  transform:none;
+  filter:drop-shadow(0 11px 9px rgba(0,0,0,.57));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="sleeping"] .lv-car-scene-image{
+  filter:brightness(.62) saturate(.68) drop-shadow(0 11px 9px rgba(0,0,0,.58));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="stale"] .lv-car-scene-image{
+  filter:grayscale(.6) brightness(.67) drop-shadow(0 11px 9px rgba(0,0,0,.55));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-road{
+  left:23%;width:54%;bottom:14%;height:13%;z-index:0;
+  transform:perspective(330px) rotateX(69deg);
+  background:radial-gradient(ellipse,rgba(0,0,0,.8) 0,rgba(0,0,0,.55) 33%,rgba(15,36,54,.14) 64%,transparent 75%);
+  opacity:.95;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-road:before,
+.live-root.lv-vehicle-visualization .lv-car-scene-road:after{
+  content:"";position:absolute;bottom:23%;
+  width:24%;height:30%;border-radius:50%;
+  background:rgba(0,0,0,.84);filter:blur(5px);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-road:before{left:7%}
+.live-root.lv-vehicle-visualization .lv-car-scene-road:after{right:7%}
+.live-root.lv-vehicle-visualization .lv-car-scene-horizon{
+  top:74%;left:21%;width:58%;opacity:.25;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-glow{
+  left:20%;right:20%;top:45%;bottom:15%;
+  opacity:.38;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-energy{
+  inset:42% 20% 8%;border-width:1px;
+  transform:perspective(420px) rotateX(72deg);
+  opacity:.0;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="charging"] .lv-car-scene-energy{opacity:.6}
+@media(max-width:1099px){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image{
+    left:15%;width:70%;top:20%;height:66%;
+  }
+  .live-root.lv-vehicle-visualization .lv-car-scene-road{bottom:13%;left:18%;width:64%}
+}
+@media(max-width:700px){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image{
+    left:13%;width:74%;top:21%;height:65%;
+  }
+  .live-root.lv-vehicle-visualization .lv-car-scene-road{bottom:14%;left:14%;width:72%}
+}
+
+/* Idle telemetry lives IN the grid. Never position it over the KPI cards.
+   On the Tesla Standard browser it reduces to one compact line. */
+.live-root .lv-session-card{
+  grid-template-rows:auto minmax(0,1fr);
+  align-content:stretch;
+}
+.live-root .lv-session-card.is-idle{
+  grid-template-rows:auto auto minmax(0,1fr);
+}
+.live-root .lv-session-idle{
+  position:static;
+  z-index:auto;
+  width:100%;
+  min-width:0;
+  height:auto;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  padding:3px 0 4px;
+  pointer-events:none;
+  color:#a6c7dd;
+}
+.live-root .lv-session-idle[hidden]{display:none!important}
+.live-root .lv-session-idle>span{
+  flex:0 0 auto;
+  font-size:16px;
+  font-weight:550;
+  color:#54b8f2;
+  line-height:1;
+}
+.live-root .lv-session-idle strong{
+  font-size:clamp(11px,.85vw,14px);
+  font-weight:630;
+  line-height:1.2;
+}
+.live-root .lv-session-idle small{
+  font-size:clamp(9px,.67vw,11px);
+  color:#91acc0;
+  line-height:1.2;
+}
+.live-root .lv-session-card .lv-session-metrics{
+  min-height:0;
+}
+@media(max-width:920px), (max-height:650px){
+  .live-root .lv-session-idle{
+    gap:4px;
+    padding:1px 0;
+  }
+  .live-root .lv-session-idle>span{display:none}
+  .live-root .lv-session-idle strong{font-size:11px}
+  .live-root .lv-session-idle small{display:none}
+}
+
+/* V0.1.1.80 – approved showroom reference: anchored car, cohesive instruments.
+   The six studio cutouts deliberately retain their own transparent padding:
+   visible tires sit ~81% down the intrinsic image. Ground/contact is aligned
+   with those pixels, not with the end of the CSS image box. */
+.live-root.lv-vehicle-visualization .lv-car-scene{
+  background:radial-gradient(ellipse at 50% 78%,rgba(35,98,156,.23),transparent 65%),
+    linear-gradient(160deg,#0b2540 0%,#071a2d 58%,#071625 100%);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-floor{
+  position:absolute;z-index:0;pointer-events:none;
+  left:-14%;right:-14%;bottom:-18%;height:54%;
+  transform:perspective(550px) rotateX(62deg) scale(1.2);
+  transform-origin:bottom center;
+  background-image:
+    linear-gradient(to right,rgba(63,151,224,.10) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(63,151,224,.10) 1px,transparent 1px);
+  background-size:36px 30px;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.65) 42%,#000 100%);
+  mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.65) 42%,#000 100%);
+  opacity:.5;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact{
+  position:absolute;z-index:1;pointer-events:none;
+  left:24%;right:24%;bottom:11%;height:9%;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,0,0,.65) 0%,rgba(0,0,0,.3) 40%,transparent 74%);
+  filter:blur(6px);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact::before,
+.live-root.lv-vehicle-visualization .lv-car-scene-contact::after{
+  content:"";position:absolute;bottom:21%;width:22%;height:40%;border-radius:50%;
+  background:rgba(0,0,0,.63);filter:blur(3px);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact::before{left:14%}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact::after{right:13%}
+.live-root.lv-vehicle-visualization .lv-car-scene-road{display:none}
+.live-root.lv-vehicle-visualization .lv-car-scene-horizon{top:79%;opacity:.16}
+.live-root.lv-vehicle-visualization .lv-car-scene-glow{
+  left:22%;right:22%;top:52%;bottom:9%;opacity:.25;filter:blur(25px);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-image{
+  z-index:2;
+  left:8%;width:84%;top:15%;height:90%;
+  object-fit:contain;object-position:center;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.48));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="sleeping"] .lv-car-scene-image{
+  filter:brightness(.76) saturate(.78) drop-shadow(0 3px 4px rgba(0,0,0,.56));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="stale"] .lv-car-scene-image{
+  opacity:.68;filter:grayscale(.5) brightness(.62) drop-shadow(0 3px 4px rgba(0,0,0,.48));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-energy{
+  z-index:1;inset:51% 25% 3%;opacity:0;
+  transform:perspective(460px) rotateX(75deg);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="charging"] .lv-car-scene-energy{opacity:.5}
+/* Quiet first-class status gauge; don't turn sleeping into an oversized text. */
+.live-root.lv-vehicle-visualization .lv-drive-card{
+  grid-template-columns:clamp(65px,7.5vw,92px) minmax(0,1fr);
+  gap:clamp(7px,.85vw,13px);
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge{
+  width:clamp(65px,7.3vw,92px);
+  filter:none;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge-inner{inset:9px;gap:2px}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge .lv-hero-value strong{
+  font-size:clamp(23px,2.7vw,39px);font-weight:590;
+  letter-spacing:-.035em;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge[data-mode="sleeping"] .lv-hero-value strong{
+  display:none;
+}
+.live-root.lv-vehicle-visualization .lv-gauge-sleep-symbol{
+  display:none;
+  width:clamp(23px,2.2vw,32px);height:clamp(23px,2.2vw,32px);
+  fill:none;stroke:#bfd6e7;stroke-width:1.65;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.live-root.lv-vehicle-visualization .lv-speed-gauge[data-mode="sleeping"] .lv-gauge-sleep-symbol{display:block}
+.live-root.lv-vehicle-visualization .lv-speed-gauge[data-mode="sleeping"]{
+  background:conic-gradient(from 225deg,#415567 0 255deg,transparent 255deg);
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-row{gap:clamp(7px,.75vw,12px)}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance{
+  padding:clamp(8px,.8vw,13px);background:rgba(8,28,47,.83);
+  border-color:rgba(81,157,210,.26);
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring{
+  width:clamp(46px,4.4vw,64px);min-width:clamp(46px,4.4vw,64px);
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta span{
+  color:#accbdf;font-size:clamp(9px,.73vw,12px);
+  font-weight:720;letter-spacing:.04em;
+}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta b{
+  color:#f2f8fd;font-size:clamp(15px,1.35vw,22px);font-weight:620;letter-spacing:-.02em;
+}
+.live-root.lv-vehicle-visualization .lv-power-ring{position:relative}
+.live-root.lv-vehicle-visualization .lv-power-symbol{
+  display:none;position:absolute;z-index:2;
+  left:32%;top:32%;width:36%;height:36%;
+  stroke:#bbd8ed;fill:none;stroke-width:1.75;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.live-root.lv-vehicle-visualization .lv-power-ring:not(.has-live-power) .lv-power-symbol{display:block}
+.live-root.lv-vehicle-visualization .lv-power-ring:not(.has-live-power) .lv-power-ring-readout{display:none}
+.live-root.lv-vehicle-visualization .lv-power-ring:not(.has-live-power){
+  background:conic-gradient(from 225deg,#3e5363 0 235deg,transparent 235deg);
+}
+/* Premium KPI hierarchy with one consistent SVG line-icon family. */
+.live-root.lv-vehicle-visualization .lv-scene-icons{position:absolute;width:0;height:0;overflow:hidden}
+.live-root.lv-vehicle-visualization .lv-session-card .lv-card-head{
+  padding-bottom:7px;border-bottom:1px solid rgba(111,186,235,.14);
+}
+.live-root.lv-vehicle-visualization .lv-session-idle{
+  gap:9px;padding:7px 0 9px;
+  color:#c6e1f4;
+}
+.live-root.lv-vehicle-visualization .lv-idle-car-icon{
+  width:22px;height:22px;flex:0 0 auto;
+  fill:none;stroke:#65c2fb;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.live-root.lv-vehicle-visualization .lv-session-idle strong{
+  font-size:clamp(12px,1vw,16px);font-weight:620;white-space:nowrap;
+}
+.live-root.lv-vehicle-visualization .lv-session-idle small{
+  font-size:clamp(10px,.75vw,12px);color:#91b5cd;
+}
+.live-root.lv-vehicle-visualization .lv-session-metrics{
+  min-height:0;gap:clamp(6px,.65vw,11px);
+}
+.live-root.lv-vehicle-visualization .lv-session-metrics>.lv-session-stat{
+  display:flex;align-items:center;justify-content:flex-start;
+  gap:clamp(9px,.85vw,15px);padding:clamp(9px,1vw,18px);
+  border:1px solid rgba(84,160,209,.23);
+  border-radius:12px;background:rgba(6,24,40,.72);
+  min-width:0;
+}
+.live-root.lv-vehicle-visualization .lv-stat-icon{
+  width:clamp(22px,2.2vw,34px);height:clamp(22px,2.2vw,34px);
+  flex:0 0 auto;fill:none;stroke:#75c6f7;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.live-root.lv-vehicle-visualization .lv-session-stat-copy{
+  display:grid;align-content:center;justify-items:start;
+  gap:clamp(4px,.35vw,7px);min-width:0;
+}
+.live-root.lv-vehicle-visualization .lv-session-stat-copy span{
+  font-family:Inter,"Segoe UI",system-ui,sans-serif;
+  font-size:clamp(10px,.8vw,13px);font-weight:730;letter-spacing:.04em;
+  text-transform:uppercase;color:#a8c9df;
+}
+.live-root.lv-vehicle-visualization .lv-session-stat-copy b{
+  font-size:clamp(19px,1.75vw,27px);font-weight:590;
+  letter-spacing:-.02em;line-height:1.05;overflow-wrap:anywhere;
+}
+.live-root.lv-vehicle-visualization .lv-session-stat-copy .lv-session-unit{
+  display:none;font-size:clamp(10px,.72vw,12px);color:#92b6cb;line-height:1.1;
+}
+.live-root.lv-vehicle-visualization .lv-session-card.is-idle .lv-session-stat-copy .lv-session-unit{display:block}
+@media(max-width:1099px){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image{left:5%;width:90%;top:15%;height:90%}
+  .live-root.lv-vehicle-visualization .lv-car-scene-contact{left:18%;right:18%}
+  .live-root.lv-vehicle-visualization .lv-drive-card{grid-template-columns:60px minmax(0,1fr)}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge{width:60px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring{width:43px;min-width:43px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta b{font-size:clamp(12px,1.7vw,16px)}
+  .live-root.lv-vehicle-visualization .lv-session-idle{padding:3px 0;gap:5px}
+  .live-root.lv-vehicle-visualization .lv-session-idle strong{font-size:clamp(10px,1.15vw,13px)}
+  .live-root.lv-vehicle-visualization .lv-session-idle small{display:none}
+  .live-root.lv-vehicle-visualization .lv-idle-car-icon{width:15px;height:15px}
+  .live-root.lv-vehicle-visualization .lv-stat-icon{width:19px;height:19px}
+  .live-root.lv-vehicle-visualization .lv-session-metrics>.lv-session-stat{gap:6px;padding:7px}
+  .live-root.lv-vehicle-visualization .lv-session-stat-copy span{font-size:9px}
+  .live-root.lv-vehicle-visualization .lv-session-stat-copy b{font-size:clamp(14px,1.6vw,18px)}
+  .live-root.lv-vehicle-visualization .lv-session-stat-copy .lv-session-unit{font-size:9px}
+}
+@media(max-width:700px), (max-height:620px){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image{left:3%;width:94%;top:13%;height:92%}
+  .live-root.lv-vehicle-visualization .lv-car-scene-contact{bottom:12%}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge{width:53px}
+  .live-root.lv-vehicle-visualization .lv-drive-card{grid-template-columns:54px minmax(0,1fr);gap:4px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance{padding:5px;gap:4px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-ring{width:37px;min-width:37px}
+  .live-root.lv-vehicle-visualization .lv-drive-card .lv-drive-glance-meta b{font-size:12px}
+  .live-root.lv-vehicle-visualization .lv-session-metrics>.lv-session-stat{padding:5px;gap:4px}
+  .live-root.lv-vehicle-visualization .lv-stat-icon{width:16px;height:16px}
+  .live-root.lv-vehicle-visualization .lv-session-stat-copy b{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image,
+  .live-root.lv-vehicle-visualization .lv-car-scene-floor{animation:none!important;transition:none!important}
+}
+/* V0.1.1.81 – showroom calibration from approved image and real browser preview.
+   This is deliberately scoped and keeps the V80 card, gauge and SVG systems. */
+.live-root.lv-vehicle-visualization .lv-car-scene{
+  background:radial-gradient(ellipse at 54% 78%,rgba(41,116,187,.24),transparent 66%),
+    linear-gradient(155deg,#0b2744 0%,#0a223c 50%,#0b1b2e 100%);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-floor{
+  left:-15%;right:-15%;bottom:-16%;height:80%;
+  transform:perspective(540px) rotateX(68deg) scale(1.35);
+  transform-origin:bottom center;
+  background-image:linear-gradient(90deg,rgba(95,187,248,.15) 1px,transparent 1px),
+    linear-gradient(0deg,rgba(95,187,248,.15) 1px,transparent 1px);
+  background-size:38px 36px;
+  -webkit-mask-image:linear-gradient(to bottom,transparent,rgba(0,0,0,.7) 45%,#000 100%);
+  mask-image:linear-gradient(to bottom,transparent,rgba(0,0,0,.7) 45%,#000 100%);
+  opacity:.58;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-horizon{top:77%;opacity:.2}
+.live-root.lv-vehicle-visualization .lv-car-scene-glow{opacity:.48;top:49%;bottom:8%;filter:blur(25px)}
+.live-root.lv-vehicle-visualization .lv-car-scene-road{display:none!important}
+.live-root.lv-vehicle-visualization .lv-car-scene-image{
+  top:0%;left:0%;width:100%;height:112%;object-fit:contain;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.50));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="sleeping"] .lv-car-scene-image{
+  opacity:.94;filter:brightness(.8) saturate(.86) drop-shadow(0 3px 4px rgba(0,0,0,.49));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact{
+  left:23%;right:20%;width:auto;bottom:8%;height:10%;
+  background:radial-gradient(ellipse,rgba(0,0,0,.48),rgba(0,0,0,.22) 45%,transparent 75%);
+  filter:blur(5px);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact:before,
+.live-root.lv-vehicle-visualization .lv-car-scene-contact:after{
+  bottom:9%;height:55%;width:18%;background:rgba(0,0,0,.62);filter:blur(3px)
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact:before{left:27%}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact:after{right:7%}
+.live-root.lv-vehicle-visualization .lv-speed-gauge[data-mode="sleeping"] .lv-gauge-sleep-symbol{display:none}
+.live-root.lv-vehicle-visualization .lv-drive-card .lv-speed-gauge[data-mode="sleeping"] .lv-hero-value strong{
+  display:block;font-size:clamp(24px,2.3vw,36px);font-weight:600;letter-spacing:-.04em;
+}
+.live-root.lv-vehicle-visualization .lv-speed-gauge[data-mode="sleeping"] .lv-hero-value span{display:none}
+.live-root.lv-vehicle-visualization .lv-session-card{
+  background:linear-gradient(160deg,#122d45 0%,#091f34 90%);
+}
+.live-root.lv-vehicle-visualization .lv-session-metrics>.lv-session-stat{
+  gap:clamp(12px,1.05vw,20px);padding:clamp(13px,1.1vw,19px);
+  background:rgba(8,29,49,.81);border-color:rgba(95,174,227,.30);
+}
+.live-root.lv-vehicle-visualization .lv-stat-icon{
+  width:clamp(27px,2.2vw,39px);height:clamp(27px,2.2vw,39px);
+  stroke-width:1.8;
+}
+.live-root.lv-vehicle-visualization .lv-session-stat-copy span{
+  font-size:clamp(11px,.83vw,14px);font-weight:700;color:#bbd7ec;
+}
+.live-root.lv-vehicle-visualization .lv-session-stat-copy b{
+  font-size:clamp(21px,1.8vw,30px);font-weight:620;
+}
+.live-root.lv-vehicle-visualization .lv-session-stat-copy .lv-session-unit{font-size:clamp(10px,.73vw,12px)}
+.live-root.lv-vehicle-visualization .lv-session-idle{padding:7px 0 9px}
+.live-root.lv-vehicle-visualization .lv-session-idle strong{font-size:clamp(13px,1vw,16px)}
+@media(max-width:1099px){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image{height:104%;top:5%;left:0;width:100%}
+  .live-root.lv-vehicle-visualization .lv-car-scene-contact{bottom:9%;left:19%;right:19%}
+  .live-root.lv-vehicle-visualization .lv-stat-icon{width:20px;height:20px}
+  .live-root.lv-vehicle-visualization .lv-session-metrics>.lv-session-stat{padding:8px;gap:8px}
+  .live-root.lv-vehicle-visualization .lv-session-stat-copy span{font-size:10px}
+  .live-root.lv-vehicle-visualization .lv-session-stat-copy b{font-size:clamp(17px,1.65vw,21px)}
+  .live-root.lv-vehicle-visualization .lv-session-idle{padding:3px 0}
+}
+@media(max-height:620px), (max-width:700px){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image{height:100%;top:6%}
+  .live-root.lv-vehicle-visualization .lv-session-metrics>.lv-session-stat{padding:5px;gap:5px}
+  .live-root.lv-vehicle-visualization .lv-stat-icon{width:18px;height:18px}
+  .live-root.lv-vehicle-visualization .lv-session-stat-copy span{font-size:9px}
+  .live-root.lv-vehicle-visualization .lv-session-stat-copy b{font-size:15px}
+}
+/* Wheel shadows follow the perspective: the front wheel is closer/lower. */
+.live-root.lv-vehicle-visualization .lv-car-scene-contact{
+  inset:0;width:100%;height:100%;background:transparent;filter:none;border-radius:0;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact:before,
+.live-root.lv-vehicle-visualization .lv-car-scene-contact:after{
+  bottom:auto;right:auto;width:13%;height:5%;filter:blur(5px);
+  background:rgba(0,0,0,.61);
+}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact:before{left:40%;top:86%}
+.live-root.lv-vehicle-visualization .lv-car-scene-contact:after{left:68%;top:77%}
+/* Tesla Standard and laptop aspect ratios need a different car scale. */
+@media(min-width:1100px) and (max-width:1599px){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image{
+    height:85%;top:17%;width:100%;left:0;
+  }
+  .live-root.lv-vehicle-visualization .lv-car-scene-contact:before{left:40%;top:82%}
+  .live-root.lv-vehicle-visualization .lv-car-scene-contact:after{left:66%;top:73%}
+}
+@media(max-width:1099px){
+  .live-root.lv-vehicle-visualization .lv-car-scene-image{
+    left:5%;width:90%;height:100%;top:6%;object-position:center 70%;
+  }
+  .live-root.lv-vehicle-visualization .lv-car-scene-contact:before{left:37%;top:82%}
+  .live-root.lv-vehicle-visualization .lv-car-scene-contact:after{left:77%;top:76%}
+}
+
+/* V0.1.1.82: image-locked shadows; both wheel coordinates are measured
+   against the original 1448x1086 transparent cutout, NOT the scene box.
+   Image and shadows scale together across desktop and Tesla browsers. */
+.live-root.lv-vehicle-visualization .lv-car-sprite{
+  position:absolute;z-index:2;left:52%;top:-2%;
+  height:120%;width:auto;aspect-ratio:1448/1086;
+  transform:translateX(-50%);pointer-events:none;
+}
+.live-root.lv-vehicle-visualization .lv-car-sprite .lv-car-scene-image{
+  position:absolute;inset:0;width:100%;height:100%;
+  max-width:none;object-fit:fill;object-position:center;
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.75)) drop-shadow(0 5px 3px rgba(0,0,0,.28));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="sleeping"] .lv-car-sprite .lv-car-scene-image{
+  filter:brightness(.8) saturate(.86) drop-shadow(0 2px 1px rgba(0,0,0,.82)) drop-shadow(0 4px 3px rgba(0,0,0,.3));
+}
+.live-root.lv-vehicle-visualization .lv-car-scene[data-mode="stale"] .lv-car-sprite .lv-car-scene-image{
+  filter:grayscale(.5) brightness(.65) drop-shadow(0 2px 2px rgba(0,0,0,.7));
+}
+.live-root.lv-vehicle-visualization .lv-car-sprite .lv-car-scene-contact{
+  position:absolute;z-index:0;inset:0;width:100%;height:100%;
+  border-radius:0;filter:none;pointer-events:none;
+  background:radial-gradient(ellipse 28% 3.2% at 60% 75.5%,rgba(0,0,0,.24),transparent 100%);
+}
+.live-root.lv-vehicle-visualization .lv-car-sprite .lv-car-scene-contact::before,
+.live-root.lv-vehicle-visualization .lv-car-sprite .lv-car-scene-contact::after{
+  content:"";position:absolute;bottom:auto;right:auto;
+  background:rgba(0,0,0,.78);border-radius:50%;filter:blur(2px);
+}
+.live-root.lv-vehicle-visualization .lv-car-sprite .lv-car-scene-contact::before{
+  left:35.5%;top:77.8%;width:13%;height:4%;
+}
+.live-root.lv-vehicle-visualization .lv-car-sprite .lv-car-scene-contact::after{
+  left:82%;top:68.2%;width:11%;height:3.4%;
+}
+.live-root.lv-vehicle-visualization .lv-car-scene:not([data-image="ready"]) .lv-car-sprite{
+  visibility:hidden;
+}
+/* Do not generate a detached band on the scene floor. */
+.live-root.lv-vehicle-visualization .lv-car-scene-road{display:none!important}
+@media(max-width:1099px){
+  .live-root.lv-vehicle-visualization .lv-car-sprite{left:52%;top:0;height:108%;}
+}
+@media(max-height:620px){
+  .live-root.lv-vehicle-visualization .lv-car-sprite{left:50%;top:4%;height:92%;}
+}

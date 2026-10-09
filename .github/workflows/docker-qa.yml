@@ -1,0 +1,1577 @@
+name: Docker QA
+
+on:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/docker-qa.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: trakfog-docker-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  docker-qa:
+    runs-on: ubuntu-latest
+    env:
+      TRAKFOG_HTTP_PORT: "8780"
+      TRAKFOG_TIMEZONE: "Europe/Berlin"
+      TRAKFOG_BASE_URL: "http://127.0.0.1:8780"
+      TRAKFOG_DB_NAME: "trakfog"
+      TRAKFOG_DB_USER: "trakfog"
+      TRAKFOG_DB_PASSWORD: "qa-db-password-123456"
+      TRAKFOG_DB_ROOT_PASSWORD: "qa-root-password-123456"
+      TRAKFOG_OWNER_USER: "qaadmin"
+      TRAKFOG_OWNER_EMAIL: "qa@example.invalid"
+      TRAKFOG_OWNER_PASSWORD: "qa-owner-password-123456"
+      TRAKFOG_WORKER_POLL_ONLINE_SECONDS: "30"
+      TRAKFOG_WORKER_POLL_SLEEP_SECONDS: "60"
+      TRAKFOG_WORKER_HEARTBEAT_SECONDS: "10"
+      TRAKFOG_GEOCODER_ENABLED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate QA app key
+        shell: bash
+        run: echo "TRAKFOG_APP_KEY=base64:$(openssl rand -base64 32 | tr -d '\n')" >> "$GITHUB_ENV"
+
+      - name: Compile Python services
+        run: |
+          python3 -m compileall -q worker
+          python3 -m py_compile docker/updater/updater.py
+
+      - name: Validate Tesla HTTP2 and TLS13 code
+        run: |
+          grep -q "import httpx" worker/trakfog_worker/tesla.py
+          grep -q "http2=True" worker/trakfog_worker/tesla.py
+          grep -q "TLSVersion.TLSv1_3" worker/trakfog_worker/tesla.py
+          grep -q "httpx\[http2\]" worker/requirements.txt
+          grep -q "CURL_HTTP_VERSION_2TLS" src/TeslaConnector.php
+          grep -q "CURL_SSLVERSION_TLSv1_3" src/TeslaConnector.php
+
+      - name: Validate Tesla 403 fallback and freshness code
+        run: |
+          grep -q "without_location" src/TeslaConnector.php
+          grep -q "without_location" worker/trakfog_worker/tesla.py
+          grep -q "rememberApiIssue" src/TeslaService.php
+          grep -q "recoverableTeslaError" public/connect.php
+          grep -q "known_vehicle_fallback" worker/trakfog_worker/worker.py
+          grep -q "known_tesla_vehicles" worker/trakfog_worker/db.py
+          grep -q "tesla_403_refresh_last_at" worker/trakfog_worker/worker.py
+          grep -q "products_source" worker/trakfog_worker/worker.py
+          grep -q "workerStateBroken" public/system.php
+          grep -q "Tesla Fahrzeugerkennung" public/system.php
+          grep -q "Tesla Datenfrische" public/system.php
+          grep -q "data_freshness" public/live-data.php
+          grep -q "Daten veraltet" public/assets/js/liveview.js
+          grep -q "last_event_at" public/system.php
+          ! grep -q "last_message_at" public/system.php
+          ! grep -q "response.ok" worker/trakfog_worker/tesla.py
+          grep -q "response.is_success" worker/trakfog_worker/tesla.py
+          grep -q "def diagnostic" worker/trakfog_worker/tesla.py
+          grep -q "tesla_error" worker/trakfog_worker/tesla.py
+          grep -q "http_version" worker/trakfog_worker/tesla.py
+          grep -q "tesla_api_last_diagnostic" worker/trakfog_worker/worker.py
+          grep -q "tesla_api_last_diagnostic" src/TeslaService.php
+          grep -q "system-api-diagnostic" public/system.php
+          grep -q "txid / Request-ID" public/system.php
+          grep -q "keine Access-/Refresh-Tokens" public/system.php
+          grep -q "status='connected'" database/migrations/0.1.1.38.sql
+          grep -q "Fahrzeugliste" database/migrations/0.1.1.44.sql
+          ! grep -q "Tesla verweigert den Detailabruf" src/TeslaConnector.php
+          grep -q "COALESCE(:latitude,latitude)" src/TeslaService.php
+          grep -q "latitude=COALESCE(%s,latitude)" worker/trakfog_worker/worker.py
+
+      - name: Validate license
+        run: |
+          test -f LICENSE
+          grep -q "GNU AFFERO GENERAL PUBLIC LICENSE" LICENSE
+          grep -q "Version 3, 19 November 2007" LICENSE
+          grep -q "AGPL-3.0-only" README.md
+
+      - name: Validate version consistency
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          grep -Fq "x-trakfog-version: \"$VERSION\"" docker-compose.yml
+          grep -Fq "**V$VERSION**" README.md
+          grep -Fq "<b>V$VERSION</b>" docs/index.html
+
+      - name: Validate TrakFog branding
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s public/assets/brand/trakfog-logo.svg
+          test -s public/assets/brand/trakfog-icon.svg
+          test -s public/site.webmanifest
+          grep -q 'assets/brand/trakfog-icon.svg' src/View.php
+          grep -q 'assets/brand/trakfog-logo.svg' src/View.php
+          grep -q 'assets/brand/trakfog-logo.svg' public/login.php
+          grep -q 'assets/brand/trakfog-logo.svg' public/live.php
+          grep -q 'assets/brand/trakfog-icon.svg' public/live.php
+          grep -q 'assets/brand/trakfog-logo.svg' src/ErrorPage.php
+          grep -q 'site.webmanifest' src/View.php
+          grep -q 'site.webmanifest' public/live.php
+          grep -q 'application/manifest+json' public/.htaccess
+          ! grep -q '<span class="tf-mark">TF</span>' src/View.php public/login.php src/ErrorPage.php
+          ! grep -q '<span class="live-mark">TF</span>' public/live.php
+          grep -q 'trakfog-logo.svg' README.md
+          grep -q 'trakfog-logo.svg' docs/index.html
+
+      - name: Validate TrakFog Info and Credits
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'id="infoToggle"' src/View.php
+          grep -Fq 'id="infoModal"' src/View.php
+          grep -Fq 'Systeminformationen' src/View.php
+          grep -Fq 'Konzeption &amp; Entwicklung' src/View.php
+          grep -Fq 'Patrick Garbe' src/View.php
+          grep -Fq 'Buddy' src/View.php
+          grep -Fq 'AGPL-3.0-only' src/View.php
+          grep -Fq 'Projektinitiator &amp; Entwickler' src/View.php
+          if grep -RIl \
+            --include='*.php' --include='*.js' --include='*.css' --include='*.md' --include='*.html' \
+            -E 'DRK Ortsverein Schwelm|DRK-ONE' src public README.md CHANGELOG.md docs | grep -q .; then
+            echo "TrakFog contains an unwanted DRK project affiliation."
+            exit 1
+          fi
+          grep -Fq 'href="#info">Info</a>' public/system.php
+          grep -Fq 'id="info"' public/system.php
+          grep -Fq 'render_trakfog_info_content' public/system.php
+          grep -Fq 'data-info-modal-close' src/View.php
+          grep -Fq 'setInfoModal' public/assets/js/app.js
+          if grep -RIl \
+            --include='*.php' --include='*.js' --include='*.css' --include='*.md' --include='*.html' \
+            -E 'ChatGPT|OpenAI' src public README.md docs | grep -q .; then
+            echo "Visible Community code contains a forbidden ChatGPT/OpenAI credit."
+            exit 1
+          fi
+          echo "TrakFog Info and Credits: ok"
+
+      - name: Validate TrakFog blue brand system
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq -- '--brand:#159cff;' public/assets/css/app.css
+          grep -Fq -- '--brand-strong:#2169ff;' public/assets/css/app.css
+          grep -Fq -- '--brand-soft:rgba(21,156,255,.10);' public/assets/css/app.css
+          grep -Fq -- '--lv-brand:#159cff;' public/assets/css/liveview.css
+          grep -Fq '.login-brand{display:grid;justify-items:center' public/assets/css/app.css
+          grep -Fq '.login-brand-logo{display:block;width:min(260px,78%);height:auto;margin:0 auto}' public/assets/css/app.css
+          ! grep -Fq -- '--brand:#e82127;' public/assets/css/app.css
+          ! grep -Fq -- '--lv-brand:#e82127;' public/assets/css/liveview.css
+          grep -Fq -- '--danger:#d92b36;' public/assets/css/app.css
+          grep -Fq '.btn-danger' public/assets/css/app.css
+
+      - name: Validate data migration center
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s src/DataMigrationService.php
+          test -s bin/data-migration-worker.php
+          test -s public/migration.php
+          test -s database/migrations/0.1.1.52.sql
+          grep -Fq "final class DataMigrationService" src/DataMigrationService.php
+          grep -Fq "'teslamate'" src/DataMigrationService.php
+          grep -Fq "'teslalogger'" src/DataMigrationService.php
+          grep -Fq "'teslafi'" src/DataMigrationService.php
+          grep -Fq "'tessie'" src/DataMigrationService.php
+          grep -Fq "'teslascope'" src/DataMigrationService.php
+          grep -Fq "'tronity'" src/DataMigrationService.php
+          grep -Fq "'tezlab'" src/DataMigrationService.php
+          grep -Fq "pg_restore" src/DataMigrationService.php
+          grep -Fq "'--table=' . \$table" src/DataMigrationService.php
+          grep -Fq "parsePgSqlCopyIndex" src/DataMigrationService.php
+          grep -Fq "PostgreSQL SQL Dump" src/DataMigrationService.php
+          grep -Fq "ZipArchive" src/DataMigrationService.php
+          grep -Fq "data_migration_jobs" database/migrations/0.1.1.52.sql
+          grep -Fq "postgresql-client" docker/web/Dockerfile
+          grep -Fq "docker-php-ext-install pdo_mysql curl zip" docker/web/Dockerfile
+          grep -Fq 'href="migration.php"' public/system.php
+          grep -Fq 'Datenmigration' public/system.php
+          grep -Fq 'Daten mitnehmen. Nicht neu anfangen.' public/migration.php
+
+      - name: Validate Integration API v1
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s src/IntegrationApi.php
+          test -s public/api/v1/index.php
+          test -s database/migrations/0.1.1.53.sql
+          test -s docs/INTEGRATION-API.md
+          grep -Fq "final class IntegrationApi" src/IntegrationApi.php
+          grep -Fq "SCOPE_VEHICLE_READ = 'vehicle:read'" src/IntegrationApi.php
+          grep -Fq "hash('sha256', \$token)" src/IntegrationApi.php
+          grep -Fq "rate_limit_per_minute" src/IntegrationApi.php
+          grep -Fq "freshness" src/IntegrationApi.php
+          grep -Fq "charge_limit_soc" src/IntegrationApi.php
+          grep -Fq "integration_api_tokens" database/migrations/0.1.1.53.sql
+          grep -Fq "integration_api_requests" database/migrations/0.1.1.53.sql
+          ! grep -Fq "access_token_enc" public/api/v1/index.php
+          ! grep -Fq "refresh_token_enc" public/api/v1/index.php
+          grep -Fq "RewriteRule ^api/v1/vehicles/?$" public/.htaccess
+          grep -Fq "vehicle_status" public/.htaccess
+          grep -Fq 'href="#integration-api">Integration API</a>' public/system.php
+          grep -Fq 'id="integration-api"' public/system.php
+          grep -Fq "API-Zugang erstellen" public/system.php
+          grep -Fq "Authorization: Bearer tfk_" docs/INTEGRATION-API.md
+          grep -Fq "VoltCore" docs/INTEGRATION-API.md
+
+      - name: Validate first-run setup wizard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s src/SetupService.php
+          test -s public/setup.php
+          test -s database/migrations/0.1.1.54.sql
+          grep -Fq "final class SetupService" src/SetupService.php
+          grep -Fq "GET_LOCK" src/SetupService.php
+          grep -Fq "claimOwner" src/SetupService.php
+          grep -Fq "validateSetupToken" src/SetupService.php
+          grep -Fq "setup_token" public/setup.php
+          grep -Fq "SETUP_TOKEN_FILE" docker/web/entrypoint.sh
+          grep -Fq "setup_completed" database/migrations/0.1.1.54.sql
+          grep -Fq "setup.php" public/index.php
+          grep -Fq "SetupService::required" public/login.php
+          grep -Fq "No owner preconfigured. Waiting for first-run web setup." bin/docker-bootstrap.php
+          grep -Fq "TRAKFOG_OWNER_EMAIL=" .env.example
+          grep -Fq "Ersteinrichtungsassistenten" docker/PORTAINER.md
+          grep -Fq "Ersteinrichtungsassistenten" docker/DOCKER.md
+          grep -Fq "TrakFog startklar machen." public/setup.php
+          grep -Fq "Historie mitnehmen?" public/setup.php
+          grep -Fq "Tesla später verbinden" public/setup.php
+          ! grep -Fq "DRK" public/setup.php src/SetupService.php
+
+      - name: Validate adaptive dashboard hero
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'data-dashboard-root' public/app.php
+          grep -Fq 'data-dashboard-vehicle-select' public/app.php
+          grep -Fq 'data-dashboard-favorite' public/app.php
+          grep -Fq 'data-dashboard-hero' public/app.php
+          grep -Fq 'data-secondary-car="1"' public/app.php
+          grep -Fq 'data-secondary-car="2"' public/app.php
+          grep -Fq 'dashboard-energy-line' public/app.php
+          grep -Fq 'dashboard-car-image' public/app.php
+          grep -Fq 'TeslaVehicleArt::asset' public/app.php
+          grep -Fq 'data-car-asset' public/app.php
+          grep -Fq 'dashboard-thumb-link' public/app.php
+          test -s public/assets/vehicles/model-3-white.svg
+          test -s public/assets/vehicles/model-s-white.svg
+          test -s public/assets/vehicles/model-x-white.svg
+          grep -Fq 'TripMerge::suggestionFor' public/live-data.php
+          grep -Fq 'data-trip-merge-choice' public/trips.php
+          grep -Fq 'lvTripMergeToggle' public/live.php
+          grep -Fq 'trip_merge_members' database/migrations/0.1.1.60.sql
+          node --check public/assets/js/liveview.js
+          php -l src/TripMerge.php
+          php -l public/trip-merge.php
+          php -l public/trip-group.php
+          php tests/test_trip_merge.php
+          python3 tests/qa_contracts.py
+          grep -Fq 'data-secondary-car="<?= $stackIndex ?>"' public/app.php
+          ! grep -Fq 'dashboard-car-svg' public/app.php
+          test -s public/assets/vehicles/model-y-white.svg
+          test -s public/assets/css/living-garage.css
+          test -s public/assets/js/living-garage.js
+          grep -Fq 'lg-atmosphere' public/app.php
+          grep -Fq 'data-lg-motion="off"' public/app.php
+          grep -Fq 'data-lg-motion="subtle"' public/app.php
+          grep -Fq 'data-lg-motion="full"' public/app.php
+          grep -Fq 'living-garage.css' src/View.php
+          grep -Fq 'living-garage.js' src/View.php
+          grep -Fq 'trakfog-living-garage-motion' public/assets/js/living-garage.js
+          grep -Fq 'prefers-reduced-motion:reduce' public/assets/css/living-garage.css
+          node --check public/assets/js/living-garage.js
+          grep -Fq "humanTrim" public/app.php
+          grep -Fq 'data-hero-icon-d' public/app.php
+          grep -Fq 'mode-charging' public/assets/css/app.css
+          grep -Fq 'mode-driving' public/assets/css/app.css
+          grep -Fq 'mode-sleeping' public/assets/css/app.css
+          grep -Fq 'mode-online' public/assets/css/app.css
+          grep -Fq 'dashboard-secondary-car' public/assets/css/app.css
+          grep -Fq 'dashboard-car-image' public/assets/css/app.css
+          grep -Fq 'dashboard-hero.mode-sleeping .dashboard-primary-car' public/assets/css/app.css
+          grep -Fq 'trakfog-dashboard-favorite-vehicle' public/assets/js/app.js
+          grep -Fq "document.addEventListener('trakfog:live-updated'" public/assets/js/app.js
+          grep -Fq "secondaryCandidates" public/assets/js/app.js
+          grep -Fq "prefers-reduced-motion" public/assets/css/app.css
+          ! grep -Fq 'DRK' public/app.php
+          node --check public/assets/js/app.js
+
+      - name: Validate readable trip list and persistent merge workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s public/assets/js/trip-merge-ui.js
+          node --check public/assets/js/trip-merge-ui.js
+          node tests/test_trip_merge_ui.cjs
+          php -l public/trips.php
+          php -l public/trip-merge.php
+          php -l public/trip-group.php
+          grep -Fq 'trip-merge-ui.js' src/View.php
+          grep -Fq 'tripMergeSelectedBar' public/trips.php
+          grep -Fq 'tripMergeSave' public/trips.php
+          grep -Fq 'trip-place-name' public/assets/css/trip-merge.css
+          grep -Fq 'Tour erfolgreich gespeichert' public/trip-group.php
+
+      - name: Verify KPI navigation, measured speed and draggable LiveMap
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/test_kpi_navigation.py
+          node tests/test_chart_gaps.cjs
+          node --check public/assets/js/charts.js
+          node --check public/assets/js/liveview.js
+          php -l public/statistics.php
+          php -l public/app.php
+          php -l public/trips.php
+          grep -Fq 'MAX(CASE WHEN speed_kmh BETWEEN 0 AND 350 THEN speed_kmh END)' public/statistics.php
+          grep -Fq 'dragging:true' public/assets/js/liveview.js
+          grep -Fq 'data-chart' public/statistics.php
+
+      - name: Validate update system code
+        run: |
+          grep -q "final class UpdateService" src/UpdateService.php
+          grep -q "releases/latest" src/UpdateService.php
+          grep -q "return self::DEFAULT_REPOSITORY" src/UpdateService.php
+          ! grep -q "function saveRepository" src/UpdateService.php
+          ! grep -q 'name="update_repository"' public/system.php
+          grep -q "hotteftw1981/TrakFog-Public 🔒" public/system.php
+          grep -q "Update-Zugang" public/system.php
+          grep -q "dashboard-trakfog-update" public/app.php
+          grep -q "TrakFog V.*verfügbar" public/app.php
+          grep -q "update_last_check_status" src/UpdateService.php
+          grep -q "update_github_token_enc" src/UpdateService.php
+          grep -q "triggerUpdate" src/UpdateService.php
+          grep -q "X-TrakFog-Updater-Token" src/UpdateService.php
+          grep -q "trakfog-updater" docker-compose.yml
+          test -s docker/updater/Dockerfile
+          test -s docker/updater/updater.py
+          grep -q "REPOSITORY = \"hotteftw1981/TrakFog-Public\"" docker/updater/updater.py
+          grep -q "_verify_latest_release" docker/updater/updater.py
+          ! grep -q "triggerPortainerUpdate" src/UpdateService.php
+          ! grep -q "update_portainer_webhook_enc" src/UpdateService.php
+          ! grep -q "confirm_stable_reference" public/system.php
+          ! grep -q "Portainer Stack-Webhook" public/system.php
+          grep -q "update_pending" bin/docker-bootstrap.php
+          grep -q "update_last_success_version" bin/docker-bootstrap.php
+          grep -q "Advance stable branch" .github/workflows/release.yml
+          grep -q 'refs/heads/stable' .github/workflows/release.yml
+          test -s docker/DOCKER.md
+          grep -q 'refs/heads/stable' docker/PORTAINER.md
+
+      - name: Validate Live Map follow and Tesla cost sync code
+        run: |
+          grep -q "trakfog-live-map-zoom" public/assets/js/liveview.js
+          grep -q "dragging:true" public/assets/js/liveview.js
+          grep -q "map.on('dragstart'" public/assets/js/liveview.js
+          grep -q "if(mapFollow)" public/assets/js/liveview.js
+          grep -q "pointer-events:auto" public/assets/css/liveview.css
+          ! grep -q "dragging:false" public/assets/js/liveview.js
+          grep -q "touchZoom:'center'" public/assets/js/liveview.js
+          grep -q "map.panTo" public/assets/js/liveview.js
+          ! grep -q "map.fitBounds(points" public/assets/js/liveview.js
+          grep -q "map-workspace" src/View.php
+          grep -q "body.map-workspace{height:100dvh;overflow:hidden}" public/assets/css/app.css
+          grep -q "body.map-workspace .map-activity-grid{display:none}" public/assets/css/app.css
+          grep -q "map.invalidateSize" public/map.php
+          grep -q "mapHeatLegendTitle" public/map.php
+          grep -q "Lade-Hotspots" public/map.php
+          grep -q "routeTripId], 1200" public/live-data.php
+          grep -q "getChargingHistoryV2" worker/trakfog_worker/tesla.py
+          grep -q "tesla_invoice" worker/trakfog_worker/db.py
+          grep -q "tesla_charging_cost_sync_enabled" public/settings.php
+          grep -q "software_update" public/app.php
+          grep -q "Tesla Deep Data" public/vehicle.php
+          grep -q "vehicle_extras" worker/trakfog_worker/tesla.py
+          grep -q "tesla_vehicle_extras" worker/trakfog_worker/db.py
+          grep -q "lvNerdUpdate" public/assets/js/liveview.js
+          grep -q "grid-template-areas:" public/assets/css/liveview.css
+          grep -q '"session session"' public/assets/css/liveview.css
+          grep -q "leaflet-top.leaflet-left" public/assets/css/liveview.css
+          grep -q "lv-position-nav" public/live.php
+          grep -q "lv-position-nav" public/assets/css/liveview.css
+          grep -q "lvDriveGear" public/live.php
+          grep -q "lvPowerRing" public/live.php
+          grep -q "lvJourneyChargedEnergy" public/live.php
+          grep -q "lv-map-location-toggle" public/live.php
+          grep -q "ALLES GESCHLOSSEN" public/assets/js/liveview.js
+          ! grep -q 'id="lvNerdTireFL"' public/live.php
+          grep -q "CHANGELOG.md" README.md
+          grep -q "Kosten-Grundsatz" README.md
+          grep -q "nav-group-label" src/View.php
+          grep -q 'href="system.php"' src/View.php
+          grep -q "System & Verbindung" public/system.php
+          grep -q "system-local-nav" public/system.php
+          grep -q "dashboard-main" public/app.php
+          ! grep -q "TrakFog Engine</span>" src/View.php
+          grep -q "kostenpflichtige Fleet API" docs/index.html
+          ! grep -q "### 🔜 Nächster Architekturblock" README.md
+          ! grep -q "<li>offizielle Tesla Fleet API</li>" public/settings.php
+          ! grep -q "V0.1.1.9 — Repository Cleanup" README.md
+          test -s docs/index.html
+
+      - name: Validate LiveView JavaScript and metrics
+        run: |
+          node --check public/assets/js/liveview.js
+          node tests/test_liveview_metrics.cjs
+          node tests/test_liveview_layout.cjs
+          node tests/test_tesla_liveview_breakpoints.cjs
+          node tests/test_liveview_telemetry_typography.cjs
+          node tests/test_liveview_modes.cjs
+          node tests/test_liveview_car_stage.cjs
+          node tests/test_liveview_car_assets_v79.cjs
+          node tests/test_liveview_showroom_v80.cjs
+          node tests/test_showroom_v81.cjs
+          node tests/test_vehicle_ground_contact_v82.cjs
+          php -l src/TeslaVehicleArt.php
+          php -l public/vehicle.php
+          php -l public/live-data.php
+          php -l public/app.php
+          php tests/test_tesla_vehicle_generation.php
+          grep -Fq 'vehicle_art_variant' public/vehicle.php
+          grep -Fq "'visual' => \$carArt" public/live-data.php
+          grep -Fq 'lvSessionEmpty' public/live.php
+          grep -Fq 'assets/vehicles/model-y-classic.svg' src/TeslaVehicleArt.php
+          grep -Fq 'assets/vehicles/model-3-classic.svg' src/TeslaVehicleArt.php
+
+      - name: Validate compose
+        run: docker compose config >/dev/null
+
+      - name: Build stack images
+        run: docker compose build web worker updater
+
+      - name: Start stack
+        run: docker compose up -d
+
+      - name: Wait for healthy web
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 40); do
+            HEALTH_BODY="$(curl -fsS http://127.0.0.1:8780/health.php || true)"
+            if grep -q '"ok":true' <<<"$HEALTH_BODY"; then
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose ps
+          docker compose logs --no-color
+          exit 1
+
+      - name: Check data migration runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec trakfog-web php -l /var/www/html/src/DataMigrationService.php
+          docker exec trakfog-web php -l /var/www/html/public/migration.php
+          docker exec trakfog-web php -l /var/www/html/bin/data-migration-worker.php
+          docker exec trakfog-web sh -lc 'command -v pg_restore >/dev/null && command -v nohup >/dev/null && php -m | grep -Eqi "^zip$"'
+          TABLE_OK="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SHOW TABLES LIKE 'data_migration_jobs';")"
+          test "$TABLE_OK" = "data_migration_jobs"
+
+          EXPORT_JOB="$(docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $job = DataMigrationService::createExportJob($pdo, 1);
+            echo (int)$job["id"];
+          ')"
+          test -n "$EXPORT_JOB"
+
+          EXPORT_STATUS=""
+          for i in $(seq 1 60); do
+            EXPORT_STATUS="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT status FROM data_migration_jobs WHERE id=$EXPORT_JOB;")"
+            if [ "$EXPORT_STATUS" = "completed" ]; then break; fi
+            if [ "$EXPORT_STATUS" = "failed" ]; then
+              docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT error_message FROM data_migration_jobs WHERE id=$EXPORT_JOB;"
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$EXPORT_STATUS" = "completed"
+
+          docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $id = (int)$argv[1];
+            $job = DataMigrationService::job($pdo, $id);
+            if (!$job || !DataMigrationService::canDownload($job)) {
+                throw new RuntimeException("Portable export was not created");
+            }
+            $zip = new ZipArchive();
+            if ($zip->open((string)$job["result_path"]) !== true) {
+                throw new RuntimeException("Portable export ZIP is invalid");
+            }
+            $manifest = json_decode((string)$zip->getFromName("manifest.json"), true);
+            $zip->close();
+            if (($manifest["format"] ?? null) !== "trakfog-data-export") {
+                throw new RuntimeException("Portable export manifest is invalid");
+            }
+            echo "portable export: ok\n";
+          ' -- "$EXPORT_JOB"
+
+          BEFORE_COUNTS="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT (SELECT COUNT(*) FROM vehicles),(SELECT COUNT(*) FROM trips),(SELECT COUNT(*) FROM vehicle_stream_samples),(SELECT COUNT(*) FROM charges);")"
+
+          REIMPORT_JOB="$(docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $exportId = (int)$argv[1];
+            $export = DataMigrationService::job($pdo, $exportId);
+            $source = (string)($export["result_path"] ?? "");
+            if ($source === "" || !is_file($source)) {
+              throw new RuntimeException("Export source missing for re-import");
+            }
+            $tmp = "/tmp/trakfog-reimport.zip";
+            if (!copy($source, $tmp)) {
+              throw new RuntimeException("Could not stage portable export for re-import");
+            }
+            $file = [
+              "error" => UPLOAD_ERR_OK,
+              "tmp_name" => $tmp,
+              "size" => filesize($tmp),
+              "name" => "TrakFog-Portable.zip",
+            ];
+            $job = DataMigrationService::createImportJob($pdo, $file, 1);
+            if (($job["source"] ?? null) !== "trakfog") {
+              throw new RuntimeException("Portable TrakFog export was not detected");
+            }
+            DataMigrationService::startImport($pdo, (int)$job["id"]);
+            echo (int)$job["id"];
+          ' -- "$EXPORT_JOB")"
+
+          REIMPORT_STATUS=""
+          for i in $(seq 1 60); do
+            REIMPORT_STATUS="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT status FROM data_migration_jobs WHERE id=$REIMPORT_JOB;")"
+            if [ "$REIMPORT_STATUS" = "completed" ]; then break; fi
+            if [ "$REIMPORT_STATUS" = "failed" ]; then
+              docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT error_message FROM data_migration_jobs WHERE id=$REIMPORT_JOB;"
+              docker exec trakfog-web sh -lc "cat /var/lib/trakfog/migrations/logs/job-$REIMPORT_JOB.log || true"
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$REIMPORT_STATUS" = "completed"
+
+          AFTER_COUNTS="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT (SELECT COUNT(*) FROM vehicles),(SELECT COUNT(*) FROM trips),(SELECT COUNT(*) FROM vehicle_stream_samples),(SELECT COUNT(*) FROM charges);")"
+          test "$AFTER_COUNTS" = "$BEFORE_COUNTS"
+          echo "portable TrakFog re-import duplicate protection: ok"
+
+      - name: Test browser-first fresh install path
+        shell: bash
+        run: |
+          set -euo pipefail
+          SETUP_DB="trakfog_setup_qa"
+          docker exec trakfog-db mariadb -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" -e "
+            DROP DATABASE IF EXISTS $SETUP_DB;
+            CREATE DATABASE $SETUP_DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+            GRANT ALL PRIVILEGES ON $SETUP_DB.* TO '$TRAKFOG_DB_USER'@'%';
+            FLUSH PRIVILEGES;
+          "
+
+          docker exec             -e TRAKFOG_DB_NAME="$SETUP_DB"             -e TRAKFOG_OWNER_USER="admin"             -e TRAKFOG_OWNER_EMAIL=""             -e TRAKFOG_OWNER_PASSWORD=""             trakfog-web php /var/www/html/bin/docker-bootstrap.php             | tee /tmp/trakfog-setup-bootstrap.log
+
+          grep -Fq "Waiting for first-run web setup" /tmp/trakfog-setup-bootstrap.log
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$SETUP_DB" -e "SELECT COUNT(*) FROM users;")" = "0"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$SETUP_DB" -e "SELECT setting_value FROM settings WHERE setting_key='setup_completed';")" = "0"
+
+          docker exec -e TRAKFOG_DB_NAME="$SETUP_DB" trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            if (SetupService::userCount($pdo) !== 0 || SetupService::completed($pdo)) {
+                throw new RuntimeException("Fresh setup state invalid");
+            }
+            $validKey=trim((string)file_get_contents("/var/lib/trakfog/setup_token"));
+            if (strlen($validKey)!==64 || !SetupService::validateSetupToken($validKey)) {
+                throw new RuntimeException("Setup key generation or access failed");
+            }
+            try {
+                SetupService::claimOwner($pdo, "qa-invalid", "invalid@example.invalid", "qa-setup-password-123", "qa-setup-password-123", str_repeat("0",64));
+                throw new RuntimeException("Invalid setup key accepted!");
+            } catch (RuntimeException $err) {
+                if (!str_contains($err->getMessage(), "Installationsschlüssel")) {
+                    throw $err;
+                }
+            }
+            if (SetupService::userCount($pdo)!==0) {
+                throw new RuntimeException("Invalid key unexpectedly created a user");
+            }
+            $id = SetupService::claimOwner($pdo, "qa-first-owner", "first-owner@example.invalid", "qa-setup-password-123", "qa-setup-password-123", $validKey);
+            if ($id <= 0 || SetupService::userCount($pdo) !== 1) {
+                throw new RuntimeException("Owner claim failed");
+            }
+            SetupService::complete($pdo, $id);
+            $stmt=$pdo->prepare("SELECT setting_value FROM settings WHERE setting_key=?");
+            $stmt->execute(["setup_completed"]);
+            if ((string)$stmt->fetchColumn() !== "1") {
+                throw new RuntimeException("Setup completion was not persisted");
+            }
+            echo "browser-first setup: ok\n";
+          '
+
+          docker exec trakfog-db mariadb -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $SETUP_DB;"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT setting_value FROM settings WHERE setting_key='setup_completed';")" = "1"
+          echo "FIRST-RUN SETUP PATH PASSED"
+
+      - name: Test public beta login rate limiter
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s database/migrations/0.1.1.87.sql
+          grep -Fq "LOGIN_BLOCK_SECONDS" src/Auth.php
+          docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $id="qa-auth-nonexistent-".bin2hex(random_bytes(6));
+            for ($n=0; $n<5; $n++) {
+                if (Auth::attempt($pdo,$id,"invalid-password")) {
+                    throw new RuntimeException("Unknown account unexpectedly authenticated");
+                }
+            }
+            $fingerprint=hash("sha256","__unknown__|cli");
+            $stmt=$pdo->prepare("SELECT attempts,blocked_until FROM login_attempts WHERE fingerprint_hash=?");
+            $stmt->execute([$fingerprint]);
+            $row=$stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row || (int)$row["attempts"]<5 || strtotime((string)$row["blocked_until"]." UTC")<=time()) {
+                throw new RuntimeException("Login throttle not persisted");
+            }
+            if (Auth::attempt($pdo,$id,"invalid-password")) {
+                throw new RuntimeException("Blocked account unexpectedly authenticated");
+            }
+            $pdo->prepare("DELETE FROM login_attempts WHERE fingerprint_hash=?")->execute([$fingerprint]);
+            echo "Public Beta login throttle: ok\n";
+          '
+
+      - name: Check Docker updater
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            STATUS="$(docker inspect --format '{{.State.Health.Status}}' trakfog-updater 2>/dev/null || true)"
+            if [ "$STATUS" = "healthy" ]; then
+              docker exec trakfog-updater docker compose version
+              test -s "$(pwd)/docker/DOCKER.md"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs --no-color updater
+          exit 1
+
+      - name: Validate runtime HTTP2 and TLS13 support
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec trakfog-worker python - <<'PY'
+          import ssl
+          import httpx
+          import h2
+          assert ssl.HAS_TLSv1_3
+          client = httpx.Client(http2=True)
+          client.close()
+
+          from types import SimpleNamespace
+          from trakfog_worker.tesla import TeslaClient, TeslaError
+
+          class FakeResponse:
+              def __init__(self, status_code, payload):
+                  self.status_code = status_code
+                  self.is_success = 200 <= status_code < 300
+                  self.http_version = "HTTP/2"
+                  self._payload = payload
+              def json(self):
+                  return self._payload
+
+          class FakeSession:
+              def __init__(self, response):
+                  self.response = response
+              def request(self, *args, **kwargs):
+                  return self.response
+
+          fake = object.__new__(TeslaClient)
+          fake.config = SimpleNamespace(tesla_api_host="https://example.invalid")
+          fake.ensure_fresh = lambda integration: integration
+          fake._tokens = lambda integration: ("qa-access-token", None)
+
+          fake.session = FakeSession(FakeResponse(200, {"response": []}))
+          assert fake._request({"id": 1}, "GET", "/api/1/products") == {"response": []}
+
+          fake.session = FakeSession(FakeResponse(403, {
+              "error": "forbidden, see Fleet API",
+              "error_description": "QA owner-api restriction",
+              "txid": "qa-txid-403"
+          }))
+          try:
+              fake._request({"id": 1}, "GET", "/api/1/products", retry_401=False)
+              raise AssertionError("403 did not raise TeslaError")
+          except TeslaError as exc:
+              assert exc.status == 403
+              diag = exc.diagnostic()
+              assert diag["area"] == "products", diag
+              assert diag["endpoint"] == "/api/1/products", diag
+              assert diag["tesla_error"] == "forbidden, see Fleet API", diag
+              assert diag["error_description"] == "QA owner-api restriction", diag
+              assert diag["txid"] == "qa-txid-403", diag
+              assert diag["http_version"] == "HTTP/2", diag
+
+          print("worker transport: HTTP/2 client available, TLS1.3 available, structured Tesla error path valid")
+          PY
+
+          docker exec trakfog-web php -r '
+            if (!defined("CURL_HTTP_VERSION_2TLS")) { fwrite(STDERR, "HTTP/2 constant missing\n"); exit(1); }
+            if (!defined("CURL_SSLVERSION_TLSv1_3")) { fwrite(STDERR, "TLS1.3 constant missing\n"); exit(1); }
+            $v = curl_version();
+            if (($v["features"] & CURL_VERSION_HTTP2) === 0) { fwrite(STDERR, "libcurl HTTP/2 feature missing\n"); exit(1); }
+            echo "web transport: HTTP/2 + TLS1.3 configuration available\n";
+          '
+
+      - name: Check worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            STATUS="$(docker inspect --format '{{.State.Health.Status}}' trakfog-worker 2>/dev/null || true)"
+            if [ "$STATUS" = "healthy" ]; then
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose ps
+          docker compose logs --no-color worker
+          exit 1
+
+      - name: Seed QA telemetry
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec trakfog-db mariadb             -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME"             -e "
+              INSERT INTO vehicles(
+                source_type,external_id,vehicle_id,vin,display_name,state,
+                odometer_km,battery_level,rated_range_km,latitude,longitude,last_seen_at,raw_json
+              )
+              VALUES(
+                'tesla_owner_api','qa-vehicle','424242','QA000000000000001','QA Tesla','online',
+                12345.6,62,274,51.2100,7.3100,NOW(),JSON_OBJECT('state','online')
+              )
+              ON DUPLICATE KEY UPDATE display_name=VALUES(display_name);
+              SET @vid=(SELECT id FROM vehicles WHERE external_id='qa-vehicle' LIMIT 1);
+
+              INSERT INTO vehicles(
+                source_type,external_id,vehicle_id,vin,display_name,state,
+                odometer_km,battery_level,rated_range_km,latitude,longitude,last_seen_at,raw_json
+              )
+              VALUES(
+                'tesla_owner_api','qa-stale','525252','QA000000000000002','QA Sleeping Tesla','online',
+                22000.0,55,240,51.2050,7.3050,DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 HOUR),JSON_OBJECT('state','online')
+              )
+              ON DUPLICATE KEY UPDATE
+                state='online',
+                last_seen_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 HOUR);
+              SET @staleid=(SELECT id FROM vehicles WHERE external_id='qa-stale' LIMIT 1);
+
+              INSERT INTO vehicle_stream_status(
+                vehicle_id,status,connected_at,last_event_at,last_error,update_count,shift_state
+              )
+              VALUES(
+                @staleid,'waiting_vehicle',DATE_SUB(UTC_TIMESTAMP(),INTERVAL 3 HOUR),
+                DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 2 HOUR),NULL,3,'P'
+              )
+              ON DUPLICATE KEY UPDATE
+                status='waiting_vehicle',
+                last_event_at=VALUES(last_event_at),
+                last_error=NULL,
+                shift_state='P';
+
+              INSERT INTO settings(setting_key,setting_value)
+              VALUES(
+                'tesla_products_last_error',
+                JSON_OBJECT(
+                  'area','products',
+                  'status',403,
+                  'message','QA products restricted',
+                  'tesla_error','forbidden, see Fleet API',
+                  'error_description','QA owner-api restriction',
+                  'txid','qa-txid-403',
+                  'http_version','HTTP/2',
+                  'endpoint','/api/1/products',
+                  'fallback_active',true,
+                  'refresh_attempted',true,
+                  'refresh_recovered',false,
+                  'retry_result','failed',
+                  'resolved',false,
+                  'source','worker',
+                  'token_expires_at',DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(),INTERVAL 30 MINUTE),'%Y-%m-%d %H:%i:%s'),
+                  'at',DATE_FORMAT(UTC_TIMESTAMP(),'%Y-%m-%d %H:%i:%s')
+                )
+              )
+              ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
+
+              INSERT INTO settings(setting_key,setting_value)
+              VALUES(
+                'tesla_api_last_diagnostic',
+                JSON_OBJECT(
+                  'area','products',
+                  'status',403,
+                  'message','QA products restricted',
+                  'tesla_error','forbidden, see Fleet API',
+                  'error_description','QA owner-api restriction',
+                  'txid','qa-txid-403',
+                  'http_version','HTTP/2',
+                  'endpoint','/api/1/products',
+                  'fallback_active',true,
+                  'refresh_attempted',true,
+                  'refresh_recovered',false,
+                  'retry_result','failed',
+                  'resolved',false,
+                  'source','worker',
+                  'token_expires_at',DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(),INTERVAL 30 MINUTE),'%Y-%m-%d %H:%i:%s'),
+                  'access_token','QA_SHOULD_NEVER_RENDER_ACCESS',
+                  'refresh_token','QA_SHOULD_NEVER_RENDER_REFRESH',
+                  'at',DATE_FORMAT(UTC_TIMESTAMP(),'%Y-%m-%d %H:%i:%s')
+                )
+              )
+              ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
+
+              INSERT INTO vehicle_snapshots(
+                vehicle_id,recorded_at,battery_level,usable_battery_level,range_km,
+                odometer_km,power_kw,charging_state,latitude,longitude,raw_json
+              )
+              VALUES(
+                @vid,NOW(),62,61,274,12345.6,0,'Disconnected',51.2100,7.3100,
+                JSON_OBJECT('climate_state',JSON_OBJECT('inside_temp',21.5,'outside_temp',12.0))
+              );
+
+              INSERT INTO vehicle_stream_samples(
+                vehicle_id,recorded_at,speed_kmh,odometer_km,soc,power_kw,
+                shift_state,range_km,latitude,longitude,raw_value
+              )
+              VALUES
+                (@vid,DATE_SUB(NOW(3),INTERVAL 38 MINUTE),48,12327.2,65,11.2,'D',287,51.2000,7.3000,'qa-route-1'),
+                (@vid,DATE_SUB(NOW(3),INTERVAL 30 MINUTE),72,12332.8,64,14.8,'D',283,51.2050,7.3040,'qa-route-2'),
+                (@vid,DATE_SUB(NOW(3),INTERVAL 20 MINUTE),61,12340.1,63,9.4,'D',278,51.2080,7.3080,'qa-route-3'),
+                (@vid,DATE_SUB(NOW(3),INTERVAL 12 MINUTE),18,12345.6,62,3.0,'D',274,51.2100,7.3100,'qa-route-4'),
+                (@vid,NOW(3),0,12345.6,62,0,'P',274,51.2100,7.3100,'qa-current');
+
+              INSERT INTO trips(
+                vehicle_id,started_at,ended_at,
+                start_latitude,start_longitude,end_latitude,end_longitude,
+                start_odometer_km,end_odometer_km,
+                distance_km,energy_kwh,avg_wh_km,max_speed_kmh,
+                start_soc,end_soc,start_range_km,end_range_km,
+                sample_count,last_sample_at,source
+              )
+              VALUES(
+                @vid,DATE_SUB(NOW(),INTERVAL 40 MINUTE),DATE_SUB(NOW(),INTERVAL 10 MINUTE),
+                51.2000,7.3000,51.2100,7.3100,
+                12327.2,12345.6,
+                18.4,3.1,168.5,91,
+                65,62,287,274,
+                25,DATE_SUB(NOW(),INTERVAL 10 MINUTE),'tesla_stream'
+              );
+
+              INSERT INTO charges(
+                vehicle_id,started_at,ended_at,energy_added_kwh,
+                start_battery_percent,end_battery_percent,max_power_kw,
+                latitude,longitude,location_name,
+                cost_amount,cost_currency,price_per_kwh,cost_source,cost_locked,
+                sample_count,source
+              )
+              VALUES(
+                @vid,DATE_SUB(NOW(),INTERVAL 2 DAY),DATE_SUB(NOW(),INTERVAL 2 DAY),
+                22.5,34,62,11,51.2150,7.3150,NULL,
+                0,'EUR',0,'manual_total',1,10,'tesla_rest'
+              );
+
+              INSERT INTO charges(
+                vehicle_id,started_at,ended_at,energy_added_kwh,
+                start_battery_percent,end_battery_percent,max_power_kw,
+                latitude,longitude,location_name,
+                cost_amount,cost_currency,price_per_kwh,cost_source,cost_locked,
+                sample_count,source
+              )
+              VALUES(
+                @vid,DATE_SUB(NOW(),INTERVAL 1 DAY),DATE_ADD(DATE_SUB(NOW(),INTERVAL 1 DAY),INTERVAL 32 MINUTE),
+                40.0,20,80,170,51.2200,7.3200,'QA Supercharger Pending',
+                NULL,NULL,NULL,NULL,0,25,'tesla_rest'
+              );
+
+              INSERT INTO geo_locations(
+                latitude,longitude,lat_key,lon_key,display_name,city,country,status,provider,resolved_at
+              )
+              VALUES
+                (51.2000,7.3000,51.20000,7.30000,'QA Start, Teststraße 1','Schwelm','Deutschland','resolved','qa',UTC_TIMESTAMP()),
+                (51.2100,7.3100,51.21000,7.31000,'QA Ziel, Testweg 2','Schwelm','Deutschland','resolved','qa',UTC_TIMESTAMP()),
+                (51.2150,7.3150,51.21500,7.31500,'QA Ladeort, Stromallee 3','Schwelm','Deutschland','resolved','qa',UTC_TIMESTAMP())
+              ON DUPLICATE KEY UPDATE display_name=VALUES(display_name),status='resolved';
+
+              INSERT INTO geofences(name,kind,shape_type,latitude,longitude,radius_m,polygon_json,active,notes)
+              VALUES
+                ('QA Zuhause','home','circle',51.2000,7.3000,35,NULL,1,'Docker QA'),
+                (
+                  'QA Parkplatz','work','polygon',51.2100,7.3100,75,
+                  '[{"lat":51.2097,"lon":7.3095},{"lat":51.2103,"lon":7.3096},{"lat":51.2104,"lon":7.3105},{"lat":51.2097,"lon":7.3106}]',
+                  1,'Docker QA Polygon'
+                );
+
+              SET @tripid=(SELECT id FROM trips WHERE vehicle_id=@vid ORDER BY id DESC LIMIT 1);
+              SET @chargeid=(SELECT id FROM charges WHERE vehicle_id=@vid ORDER BY id DESC LIMIT 1);
+              SET @ownerid=(SELECT id FROM users WHERE role='owner' ORDER BY id LIMIT 1);
+
+              INSERT INTO journeys(
+                vehicle_id,title,type,status,destination_label,
+                planned_start_at,planned_end_at,started_at,ended_at,
+                auto_assign,budget_amount,currency,notes,created_by
+              )
+              VALUES(
+                @vid,'QA Reise Italien','roadtrip','active','Gardasee QA',
+                DATE_SUB(UTC_TIMESTAMP(),INTERVAL 3 DAY),DATE_ADD(UTC_TIMESTAMP(),INTERVAL 3 DAY),
+                DATE_SUB(UTC_TIMESTAMP(),INTERVAL 3 DAY),NULL,
+                1,250,'EUR','Docker QA Journey',@ownerid
+              );
+              SET @jid=LAST_INSERT_ID();
+
+              INSERT INTO journey_trips(journey_id,trip_id,included,assignment_source)
+              VALUES(@jid,@tripid,1,'auto');
+
+              INSERT INTO journey_charges(journey_id,charge_id,included,assignment_source)
+              VALUES(@jid,@chargeid,1,'manual');
+            "
+
+      - name: Test known-vehicle fallback state
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec -i trakfog-worker python - <<'PY'
+          from trakfog_worker.config import Config
+          from trakfog_worker.worker import Worker
+
+          worker = Worker(Config.from_env())
+          fallback = worker._known_vehicle_fallback()
+          stale = next(item for item in fallback if item.get("id_s") == "qa-stale")
+          assert stale["state"] == "asleep", stale
+          print("known vehicle fallback: sleeping state derived correctly")
+          PY
+
+      - name: Test Tesla Charging History cost matching
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec -i trakfog-worker python - <<'PY'
+          from trakfog_worker.config import Config
+          from trakfog_worker.db import Database
+
+          db = Database(Config.from_env())
+          with db.connection() as conn, conn.cursor() as cur:
+              cur.execute("SELECT id FROM vehicles WHERE external_id='qa-vehicle' LIMIT 1")
+              vehicle_id = int(cur.fetchone()["id"])
+              cur.execute(
+                  "SELECT id,started_at FROM charges WHERE vehicle_id=%s AND location_name='QA Supercharger Pending' LIMIT 1",
+                  (vehicle_id,),
+              )
+              charge = cur.fetchone()
+
+          session = {
+              "session_id": "qa-tesla-history-session",
+              "start_at": charge["started_at"].strftime("%Y-%m-%d %H:%M:%S"),
+              "end_at": None,
+              "location": "QA Tesla Supercharger",
+              "energy_kwh": 40.0,
+              "cost_amount": 12.34,
+              "currency": "EUR",
+              "raw": {"qa": True, "fees": [{"feeType": "CHARGING", "totalDue": 12.34}]},
+          }
+          result = db.sync_tesla_charging_cost(vehicle_id, session)
+          assert result == "updated", result
+          PY
+
+          SYNC_ROW="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT CONCAT(cost_amount,'|',cost_currency,'|',cost_source,'|',cost_locked,'|',tesla_charge_session_id) FROM charges WHERE location_name='QA Supercharger Pending' LIMIT 1;")"
+          test "$SYNC_ROW" = "12.34|EUR|tesla_invoice|1|qa-tesla-history-session"
+
+          MANUAL_SOURCE="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT cost_source FROM charges WHERE cost_source='manual_total' LIMIT 1;")"
+          test "$MANUAL_SOURCE" = "manual_total"
+
+      - name: Test update service and startup reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker exec trakfog-web sh -c 'test -s /var/lib/trakfog/updater_token'
+
+          docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $runtime = UpdateService::runtimeState($pdo, $config);
+            $updater = $runtime["updater"] ?? [];
+            if (empty($updater["available"]) || empty($updater["ready"])) {
+              throw new RuntimeException("Docker updater was not reported as ready");
+            }
+            if (empty($updater["docker_socket_ready"]) || empty($updater["compose_ready"])) {
+              throw new RuntimeException("Docker updater preflight is incomplete");
+            }
+            echo "docker updater status: ok\n";
+          '
+
+          docker exec trakfog-db mariadb \
+            -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" \
+            -e "
+              INSERT INTO settings(setting_key,setting_value)
+              VALUES(
+                'update_latest_release',
+                JSON_OBJECT(
+                  'version','0.1.1.99',
+                  'tag','v0.1.1.99',
+                  'name','QA Update',
+                  'notes','QA release notes',
+                  'published_at',DATE_FORMAT(UTC_TIMESTAMP(),'%Y-%m-%dT%H:%i:%sZ'),
+                  'html_url','https://github.com/hotteftw1981/TrakFog-Public/releases/tag/v0.1.1.99',
+                  'prerelease',false,
+                  'draft',false,
+                  'assets',JSON_ARRAY(),
+                  'fetched_at',DATE_FORMAT(UTC_TIMESTAMP(),'%Y-%m-%d %H:%i:%s')
+                )
+              )
+              ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
+
+              INSERT INTO settings(setting_key,setting_value)
+              VALUES('update_latest_checked_at',DATE_FORMAT(UTC_TIMESTAMP(),'%Y-%m-%d %H:%i:%s'))
+              ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
+            "
+
+          docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $status = UpdateService::status($pdo, $config, false);
+            if (($status["latest_version"] ?? null) !== "0.1.1.99") {
+              throw new RuntimeException("Cached update version not detected");
+            }
+            if (empty($status["update_available"])) {
+              throw new RuntimeException("Newer cached release not marked as update");
+            }
+            echo "update status cache: ok\n";
+          '
+
+          CURRENT_VERSION="$(tr -d '[:space:]' < VERSION)"
+          docker exec trakfog-db mariadb \
+            -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" \
+            -e "
+              INSERT INTO settings(setting_key,setting_value)
+              VALUES(
+                'update_pending',
+                JSON_OBJECT(
+                  'from_version','0.1.1.0',
+                  'target_version','$CURRENT_VERSION',
+                  'release_tag',CONCAT('v','$CURRENT_VERSION'),
+                  'requested_at',DATE_FORMAT(UTC_TIMESTAMP(),'%Y-%m-%d %H:%i:%s'),
+                  'requested_by',1,
+                  'method','docker_updater'
+                )
+              )
+              ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
+            "
+
+          docker exec trakfog-web php /var/www/html/bin/docker-bootstrap.php
+
+          PENDING_IS_NULL="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT setting_value IS NULL FROM settings WHERE setting_key='update_pending' LIMIT 1;")"
+          test "$PENDING_IS_NULL" = "1"
+
+          UPDATE_STATUS="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT JSON_UNQUOTE(JSON_EXTRACT(setting_value,'$.status')) FROM settings WHERE setting_key='update_last_result' LIMIT 1;")"
+          UPDATE_INSTALLED="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT JSON_UNQUOTE(JSON_EXTRACT(setting_value,'$.installed_version')) FROM settings WHERE setting_key='update_last_result' LIMIT 1;")"
+
+          if [ "$UPDATE_STATUS" != "success" ]; then
+            echo "update reconciliation status mismatch: $UPDATE_STATUS"
+            exit 1
+          fi
+          if [ "$UPDATE_INSTALLED" != "$CURRENT_VERSION" ]; then
+            echo "update reconciliation version mismatch: got=$UPDATE_INSTALLED expected=$CURRENT_VERSION"
+            exit 1
+          fi
+          echo "update startup reconciliation: ok"
+
+      - name: Authenticated page smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          COOKIE_JAR="$(mktemp)"
+          LOGIN_HTML="$(curl -fsS -c "$COOKIE_JAR" http://127.0.0.1:8780/login.php)"
+          CSRF="$(printf '%s' "$LOGIN_HTML" | sed -n 's/.*name="csrf_token" value="\([^"]*\)".*/\1/p' | head -n1)"
+          test -n "$CSRF"
+
+          curl -fsS -L             -b "$COOKIE_JAR" -c "$COOKIE_JAR"             --data-urlencode "csrf_token=$CSRF"             --data-urlencode "login=$TRAKFOG_OWNER_USER"             --data-urlencode "password=$TRAKFOG_OWNER_PASSWORD"             http://127.0.0.1:8780/login.php             -o /tmp/trakfog-login-result.html
+
+          for PAGE in app.php drive.php trips.php trip.php?id=1 charges.php charge.php?id=1 statistics.php sleep.php map.php journeys.php journey.php?id=1 live.php system.php migration.php worker.php settings.php diagnostics.php; do
+            SAFE_PAGE="$(printf '%s' "$PAGE" | tr '/?=&' '____')"
+            CODE="$(curl -sS -b "$COOKIE_JAR" -o "/tmp/$SAFE_PAGE.html" -w '%{http_code}' "http://127.0.0.1:8780/$PAGE")"
+            if [ "$CODE" != "200" ]; then
+              echo "$PAGE returned HTTP $CODE"
+              cat "/tmp/$SAFE_PAGE.html"
+              echo "---- TrakFog application log ----"
+              docker exec trakfog-web sh -lc 'tail -n 120 /var/www/html/storage/logs/trakfog-*.log 2>/dev/null || true'
+              echo "---- Web container log ----"
+              docker compose logs --no-color web
+              exit 1
+            fi
+            if grep -q 'class="error-code"' "/tmp/$SAFE_PAGE.html"; then
+              echo "$PAGE rendered the TrakFog error page"
+              cat "/tmp/$SAFE_PAGE.html"
+              echo "---- TrakFog application log ----"
+              docker exec trakfog-web sh -lc 'tail -n 120 /var/www/html/storage/logs/trakfog-*.log 2>/dev/null || true'
+              echo "---- Web container log ----"
+              docker compose logs --no-color web
+              exit 1
+            fi
+          done
+
+          SYSTEM_HTML="$(curl -fsS -b "$COOKIE_JAR" http://127.0.0.1:8780/system.php)"
+          DASHBOARD_HTML="$(curl -fsS -b "$COOKIE_JAR" http://127.0.0.1:8780/app.php)"
+          assert_html_contains() {
+            local label="$1"
+            local needle="$2"
+            local html="$3"
+            if ! grep -Fq "$needle" <<<"$html"; then
+              echo "SMOKE ASSERTION FAILED [$label]: missing [$needle]"
+              printf '%s\n' "$html" | grep -E -i 'Sleeping|schläft|wartet|Fahrzeugerkennung|System läuft|Datendienst|Tesla' | head -n 80 || true
+              exit 1
+            fi
+            echo "SMOKE ASSERTION OK [$label]: $needle"
+          }
+          assert_html_contains "system vehicle" "QA Sleeping Tesla" "$SYSTEM_HTML"
+          assert_html_contains "system sleep freshness" "schläft / wartet" "$SYSTEM_HTML"
+          assert_html_contains "system products warning" "Fahrzeugerkennung eingeschränkt" "$SYSTEM_HTML"
+          assert_html_contains "system overall health" "System läuft · Hinweis" "$SYSTEM_HTML"
+          assert_html_contains "api diagnostic title" "Letzte Tesla-API-Diagnose" "$SYSTEM_HTML"
+          assert_html_contains "api diagnostic endpoint" "/api/1/products" "$SYSTEM_HTML"
+          assert_html_contains "api diagnostic transport" "HTTP/2" "$SYSTEM_HTML"
+          assert_html_contains "api diagnostic tesla text" "forbidden, see Fleet API" "$SYSTEM_HTML"
+          assert_html_contains "api diagnostic txid" "qa-txid-403" "$SYSTEM_HTML"
+          assert_html_contains "api diagnostic fallback" "lokale bekannte Fahrzeuge aktiv" "$SYSTEM_HTML"
+          assert_html_contains "dashboard vehicle strip" "data-dashboard-vehicle-strip" "$DASHBOARD_HTML"
+          assert_html_contains "dashboard vehicle selector" "data-dashboard-vehicle-select" "$DASHBOARD_HTML"
+          assert_html_contains "dashboard favorite control" "data-dashboard-favorite" "$DASHBOARD_HTML"
+          assert_html_contains "dashboard hero" "data-dashboard-hero" "$DASHBOARD_HTML"
+          assert_html_contains "dashboard hero vehicle" "QA Sleeping Tesla" "$DASHBOARD_HTML"
+          assert_html_contains "dashboard seeded mode" "mode-online" "$DASHBOARD_HTML"
+          assert_html_contains "dashboard secondary stage" "data-secondary-car=\"1\"" "$DASHBOARD_HTML"
+          assert_html_contains "dashboard app update" "TrakFog V0.1.1.99 verfügbar" "$DASHBOARD_HTML"
+          assert_html_contains "dashboard app update link" "system.php#updates" "$DASHBOARD_HTML"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT setting_value FROM settings WHERE setting_key='setup_completed';")" = "1"
+          assert_html_contains "integration api nav" "Integration API" "$SYSTEM_HTML"
+          assert_html_contains "integration api endpoint" "/api/v1/vehicles/{id}/status" "$SYSTEM_HTML"
+          assert_html_contains "integration api scope" "vehicle:read" "$SYSTEM_HTML"
+          assert_html_contains "update center" "⬆ Updates" "$SYSTEM_HTML"
+          assert_html_contains "update fixed source" "hotteftw1981/TrakFog-Public 🔒" "$SYSTEM_HTML"
+          if grep -Fq 'name="update_repository"' <<<"$SYSTEM_HTML"; then
+            echo "SMOKE ASSERTION FAILED [update source lock]: editable repository field rendered"
+            exit 1
+          fi
+          echo "SMOKE ASSERTION OK [update source lock]: official repository is fixed"
+          assert_html_contains "update available" "V0.1.1.99" "$SYSTEM_HTML"
+          assert_html_contains "update release tag" "v0.1.1.99" "$SYSTEM_HTML"
+          assert_html_contains "update docker updater" "Docker-Updater bereit" "$SYSTEM_HTML"
+          assert_html_contains "update install modal" "V0.1.1.99 jetzt installieren" "$SYSTEM_HTML"
+          assert_html_contains "update success history" "Letztes Update auf V" "$SYSTEM_HTML"
+          if grep -Fq "Portainer Stack-Webhook" <<<"$SYSTEM_HTML"; then
+            echo "SMOKE ASSERTION FAILED [portainer dependency]: legacy webhook UI rendered"
+            exit 1
+          fi
+          echo "SMOKE ASSERTION OK [portainer dependency]: webhook UI removed"
+          if grep -Fq "QA_SHOULD_NEVER_RENDER_ACCESS" <<<"$SYSTEM_HTML" || grep -Fq "QA_SHOULD_NEVER_RENDER_REFRESH" <<<"$SYSTEM_HTML"; then
+            echo "SMOKE ASSERTION FAILED [api diagnostic secret leak]: secret value rendered"
+            exit 1
+          fi
+          echo "SMOKE ASSERTION OK [api diagnostic secret leak]: injected secrets hidden"
+          echo "SYSTEM FRESHNESS + API DIAGNOSTIC SMOKE PASSED"
+
+          ERROR_CODE="$(curl -sS -b "$COOKIE_JAR" -o /tmp/trakfog-404.html -w '%{http_code}' http://127.0.0.1:8780/definitely-not-a-trakfog-page)"
+          test "$ERROR_CODE" = "404"
+          grep -q 'class="error-code"' /tmp/trakfog-404.html
+          grep -q 'Tesla Data Platform' /tmp/trakfog-404.html
+
+          MAP_HTML="$(curl -fsS -b "$COOKIE_JAR" http://127.0.0.1:8780/map.php)"
+          grep -q 'Karte & Orte' <<<"$MAP_HTML"
+          grep -q 'QA Parkplatz' <<<"$MAP_HTML"
+          grep -q 'polygon_points' <<<"$MAP_HTML"
+          grep -q 'Fahrdichte' <<<"$MAP_HTML"
+          grep -q 'Lade-Hotspots' <<<"$MAP_HTML"
+          grep -q 'const driveHeat' <<<"$MAP_HTML"
+          grep -q 'const chargeHeat' <<<"$MAP_HTML"
+          TRIP_HTML="$(curl -fsS -b "$COOKIE_JAR" http://127.0.0.1:8780/trip.php?id=1)"
+          grep -q 'QA Zuhause' <<<"$TRIP_HTML"
+          JOURNEY_HTML="$(curl -fsS -b "$COOKIE_JAR" http://127.0.0.1:8780/journey.php?id=1)"
+          grep -q 'QA Reise Italien' <<<"$JOURNEY_HTML"
+          grep -q 'Gesamtroute' <<<"$JOURNEY_HTML"
+          grep -q 'Zuordnung speichern' <<<"$JOURNEY_HTML"
+          JOURNEYS_HTML="$(curl -fsS -b "$COOKIE_JAR" http://127.0.0.1:8780/journeys.php)"
+          grep -q 'Reisen & Touren' <<<"$JOURNEYS_HTML"
+
+          SETTINGS_HTML="$(curl -fsS -b "$COOKIE_JAR" http://127.0.0.1:8780/settings.php)"
+          SETTINGS_CSRF="$(printf '%s' "$SETTINGS_HTML" | sed -n 's/.*name="csrf_token" value="\([^"]*\)".*/\1/p' | head -n1)"
+          test -n "$SETTINGS_CSRF"
+
+          curl -fsS -L \
+            -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
+            --data-urlencode "csrf_token=$SETTINGS_CSRF" \
+            --data-urlencode "action=save_liveview" \
+            --data-urlencode "liveview_mode=pin" \
+            --data-urlencode "new_pin=246810" \
+            --data-urlencode "remember_days=90" \
+            --data-urlencode "default_vehicle_id=1" \
+            http://127.0.0.1:8780/settings.php \
+            -o /tmp/trakfog-live-settings.html
+
+          grep -q 'PIN geschützt' /tmp/trakfog-live-settings.html
+          grep -q 'Tesla Supercharger-Kosten' /tmp/trakfog-live-settings.html
+
+          LIVE_COOKIE_JAR="$(mktemp)"
+          LIVE_LOGIN_HTML="$(curl -fsS -c "$LIVE_COOKIE_JAR" http://127.0.0.1:8780/live.php)"
+          grep -q 'PIN eingeben' <<<"$LIVE_LOGIN_HTML"
+          LIVE_CSRF="$(printf '%s' "$LIVE_LOGIN_HTML" | sed -n 's/.*name="csrf_token" value="\([^"]*\)".*/\1/p' | head -n1)"
+          test -n "$LIVE_CSRF"
+
+          curl -fsS -L \
+            -b "$LIVE_COOKIE_JAR" -c "$LIVE_COOKIE_JAR" \
+            --data-urlencode "csrf_token=$LIVE_CSRF" \
+            --data-urlencode "action=pin_login" \
+            --data-urlencode "pin=246810" \
+            --data-urlencode "remember_device=1" \
+            --data-urlencode "device_hint=QA Tesla Browser" \
+            http://127.0.0.1:8780/live.php \
+            -o /tmp/trakfog-liveview.html
+
+          grep -q 'TrakFog Live' /tmp/trakfog-liveview.html
+          grep -q 'SWIPE' /tmp/trakfog-liveview.html
+          grep -q 'lv-map-location-toggle' /tmp/trakfog-liveview.html
+          grep -q '>AN<' /tmp/trakfog-liveview.html
+          grep -q 'Andere Teslas' /tmp/trakfog-liveview.html
+          grep -q 'Community-Orte' /tmp/trakfog-liveview.html
+          grep -q 'NerdView' /tmp/trakfog-liveview.html
+          grep -q 'Akku & Laden' /tmp/trakfog-liveview.html
+          grep -q 'Türen & Klappen' /tmp/trakfog-liveview.html
+          ! grep -q 'Reifendruck' /tmp/trakfog-liveview.html
+          grep -q 'Klima' /tmp/trakfog-liveview.html
+          ! grep -q 'Straßenart' /tmp/trakfog-liveview.html
+          grep -q 'Gesamt geladen' /tmp/trakfog-liveview.html
+          grep -q 'lvPowerRing' /tmp/trakfog-liveview.html
+          grep -q 'Fahrtrichtung' /tmp/trakfog-liveview.html
+          grep -q 'lvNerdAddress' /tmp/trakfog-liveview.html
+          ! grep -q 'lvNerdLat' /tmp/trakfog-liveview.html
+          ! grep -q 'lvNerdLon' /tmp/trakfog-liveview.html
+          ! grep -q 'lvNerdEstHeading' /tmp/trakfog-liveview.html
+          ! grep -q 'Pipeline' /tmp/trakfog-liveview.html
+          ! grep -q 'TrakFog Internals' /tmp/trakfog-liveview.html
+          grep -q 'lvMapThemeToggle' /tmp/trakfog-liveview.html
+          grep -q 'data-page-dot="3"' /tmp/trakfog-liveview.html
+          grep -q 'lvSpeedGauge' /tmp/trakfog-liveview.html
+          grep -q 'lvBatteryRing' /tmp/trakfog-liveview.html
+          grep -q 'lvMapBatteryRing' /tmp/trakfog-liveview.html
+          grep -q 'lvJourneyRing' /tmp/trakfog-liveview.html
+          grep -q 'lvJourneyEmptyScene' /tmp/trakfog-liveview.html
+          grep -q 'lvNerdCompass' /tmp/trakfog-liveview.html
+          grep -q 'lvNerdSpeedGauge' /tmp/trakfog-liveview.html
+          echo "LIVEVIEW MARKUP SMOKE PASSED"
+
+          LIVE_DATA="$(curl -fsS -b "$LIVE_COOKIE_JAR" 'http://127.0.0.1:8780/live-data.php?vehicle_id=1')"
+          grep -q '"ok":true' <<<"$LIVE_DATA"
+          grep -q '"name":"QA Tesla"' <<<"$LIVE_DATA"
+          grep -q '"title":"QA Reise Italien"' <<<"$LIVE_DATA"
+          grep -q '"tesla_nerd":{' <<<"$LIVE_DATA"
+          grep -q '"odometer_km":' <<<"$LIVE_DATA"
+          grep -q '"tire_pressure_bar":' <<<"$LIVE_DATA"
+          grep -q '"charging_state":' <<<"$LIVE_DATA"
+          grep -q '"address":' <<<"$LIVE_DATA"
+          grep -q '"street_name":' <<<"$LIVE_DATA"
+          grep -q '"road_type":' <<<"$LIVE_DATA"
+          grep -q '"heading_deg":' <<<"$LIVE_DATA"
+          grep -q '"drive_seconds":' <<<"$LIVE_DATA"
+          grep -q '"charge_seconds":' <<<"$LIVE_DATA"
+          ! grep -q '"estimated_heading_deg":' <<<"$LIVE_DATA"
+          ! grep -q '"vehicle_db_id":' <<<"$LIVE_DATA"
+          ! grep -q '"engine_state":' <<<"$LIVE_DATA"
+          echo "LIVE DATA SMOKE PASSED"
+
+          grep -q 'trakfog_live_device' "$LIVE_COOKIE_JAR"
+          sed -i '/trakfog_session/d' "$LIVE_COOKIE_JAR"
+          TRUSTED_LIVE_HTML="$(curl -fsS -b "$LIVE_COOKIE_JAR" http://127.0.0.1:8780/live.php)"
+          grep -q 'lv-swipe-zone' <<<"$TRUSTED_LIVE_HTML"
+
+          TRUSTED_COUNT="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT COUNT(*) FROM liveview_devices WHERE revoked_at IS NULL AND expires_at>UTC_TIMESTAMP();")"
+          test "$TRUSTED_COUNT" -ge 1
+
+      - name: Test Integration API v1
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker exec trakfog-web php -l /var/www/html/src/IntegrationApi.php
+          docker exec trakfog-web php -l /var/www/html/public/api/v1/index.php
+
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SHOW TABLES LIKE 'integration_api_tokens';")" = "integration_api_tokens"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SHOW TABLES LIKE 'integration_api_requests';")" = "integration_api_requests"
+
+          API_TOKEN="$(docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $created = IntegrationApi::createToken($pdo, "VoltCore QA", 1, [IntegrationApi::SCOPE_VEHICLE_READ], 120);
+            echo $created["token"];
+          ')"
+          [[ "$API_TOKEN" == tfk_* ]]
+          TOKEN_HASH="$(printf '%s' "$API_TOKEN" | sha256sum | awk '{print $1}')"
+          STORED_HASH="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT token_hash FROM integration_api_tokens WHERE name='VoltCore QA' ORDER BY id DESC LIMIT 1;")"
+          test "$TOKEN_HASH" = "$STORED_HASH"
+          RAW_MATCHES="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT COUNT(*) FROM integration_api_tokens WHERE token_hash='$API_TOKEN' OR token_prefix='$API_TOKEN';")"
+          test "$RAW_MATCHES" = "0"
+
+          UNAUTH_CODE="$(curl -sS -o /tmp/api-unauth.json -w '%{http_code}' http://127.0.0.1:8780/api/v1/vehicles)"
+          test "$UNAUTH_CODE" = "401"
+          grep -Fq '"error":"missing_token"' /tmp/api-unauth.json
+
+          VEHICLES_JSON="$(curl -fsS -H "Authorization: Bearer $API_TOKEN" http://127.0.0.1:8780/api/v1/vehicles)"
+          grep -Fq '"ok":true' <<<"$VEHICLES_JSON"
+          grep -Fq '"api_version":1' <<<"$VEHICLES_JSON"
+          grep -Fq '"freshness"' <<<"$VEHICLES_JSON"
+          grep -Fq '"vin"' <<<"$VEHICLES_JSON"
+
+          VEHICLE_ID="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT id FROM vehicles ORDER BY id LIMIT 1;")"
+          test -n "$VEHICLE_ID"
+          STATUS_JSON="$(curl -fsS -H "Authorization: Bearer $API_TOKEN" "http://127.0.0.1:8780/api/v1/vehicles/$VEHICLE_ID/status")"
+          grep -Fq '"battery":{' <<<"$STATUS_JSON"
+          grep -Fq '"soc":' <<<"$STATUS_JSON"
+          grep -Fq '"target_soc":' <<<"$STATUS_JSON"
+          grep -Fq '"charging":{' <<<"$STATUS_JSON"
+          grep -Fq '"odometer_km":' <<<"$STATUS_JSON"
+          grep -Fq '"status":"fresh"' <<<"$STATUS_JSON"
+
+          API_TOKEN_ID="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT id FROM integration_api_tokens WHERE name='VoltCore QA' ORDER BY id DESC LIMIT 1;")"
+          docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            IntegrationApi::revokeToken($pdo, (int)$argv[1]);
+          ' -- "$API_TOKEN_ID"
+          REVOKED_CODE="$(curl -sS -o /tmp/api-revoked.json -w '%{http_code}' -H "Authorization: Bearer $API_TOKEN" http://127.0.0.1:8780/api/v1/vehicles)"
+          test "$REVOKED_CODE" = "401"
+          grep -Fq '"error":"invalid_token"' /tmp/api-revoked.json
+
+          RATE_TOKEN="$(docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $created = IntegrationApi::createToken($pdo, "Rate QA", 1, [IntegrationApi::SCOPE_VEHICLE_READ], 10);
+            echo $created["token"];
+          ')"
+          for i in $(seq 1 10); do
+            curl -fsS -H "Authorization: Bearer $RATE_TOKEN" http://127.0.0.1:8780/api/v1/vehicles >/dev/null
+          done
+          RATE_CODE="$(curl -sS -o /tmp/api-rate.json -w '%{http_code}' -H "Authorization: Bearer $RATE_TOKEN" http://127.0.0.1:8780/api/v1/vehicles)"
+          test "$RATE_CODE" = "429"
+          grep -Fq '"error":"rate_limited"' /tmp/api-rate.json
+
+          AUDIT_COUNT="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT COUNT(*) FROM integration_api_requests;")"
+          test "$AUDIT_COUNT" -ge 4
+          echo "INTEGRATION API V1 PASSED"
+
+      - name: Test TeslaMate backup import
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker run -d --rm --name trakfog-teslamate-qa \
+            -e POSTGRES_PASSWORD=qa \
+            -e POSTGRES_DB=teslamate \
+            postgres:18-alpine >/dev/null
+
+          trap 'docker rm -f trakfog-teslamate-qa >/dev/null 2>&1 || true' EXIT
+
+          for i in $(seq 1 40); do
+            if [ "$(docker exec trakfog-teslamate-qa psql -U postgres -d teslamate -Atqc 'SELECT 1' 2>/dev/null || true)" = "1" ]; then
+              break
+            fi
+            sleep 1
+          done
+          test "$(docker exec trakfog-teslamate-qa psql -U postgres -d teslamate -Atqc 'SELECT 1')" = "1"
+
+          docker exec -i trakfog-teslamate-qa psql -U postgres -d teslamate <<'SQL'
+          CREATE TABLE cars (
+            id bigint PRIMARY KEY,
+            eid bigint,
+            vid bigint,
+            vin text,
+            name text,
+            model text
+          );
+          CREATE TABLE drives (
+            id bigint PRIMARY KEY,
+            start_date timestamp,
+            end_date timestamp,
+            start_km double precision,
+            end_km double precision,
+            distance double precision,
+            speed_max double precision,
+            car_id bigint
+          );
+          CREATE TABLE positions (
+            id bigint PRIMARY KEY,
+            date timestamp,
+            latitude double precision,
+            longitude double precision,
+            speed double precision,
+            power double precision,
+            odometer double precision,
+            ideal_battery_range_km double precision,
+            est_battery_range_km double precision,
+            rated_battery_range_km double precision,
+            battery_level double precision,
+            elevation double precision,
+            car_id bigint,
+            drive_id bigint
+          );
+          CREATE TABLE addresses (
+            id bigint PRIMARY KEY,
+            display_name text,
+            latitude double precision,
+            longitude double precision
+          );
+          CREATE TABLE geofences (
+            id bigint PRIMARY KEY,
+            name text,
+            latitude double precision,
+            longitude double precision,
+            radius integer
+          );
+          CREATE TABLE charging_processes (
+            id bigint PRIMARY KEY,
+            start_date timestamp,
+            end_date timestamp,
+            charge_energy_added double precision,
+            charge_energy_used double precision,
+            start_battery_level integer,
+            end_battery_level integer,
+            duration_min integer,
+            car_id bigint,
+            position_id bigint,
+            geofence_id bigint,
+            address_id bigint,
+            cost numeric
+          );
+          CREATE TABLE charges (
+            id bigint PRIMARY KEY,
+            date timestamp,
+            charger_power double precision,
+            charging_process_id bigint
+          );
+          CREATE TABLE states (
+            id bigint PRIMARY KEY,
+            state text,
+            start_date timestamp,
+            end_date timestamp,
+            car_id bigint
+          );
+
+          INSERT INTO cars VALUES (1,101,201,'QA-TM-VIN-0001','QA TeslaMate','3');
+          INSERT INTO drives VALUES (10,'2026-01-05 08:00:00','2026-01-05 08:30:00',10000,10018.4,18.4,91,1);
+          INSERT INTO positions VALUES
+            (100,'2026-01-05 08:00:00',51.3000,7.4000,0,0,10000,300,295,290,80,210,1,10),
+            (101,'2026-01-05 08:10:00',51.3050,7.4050,62,12,10006,295,290,285,78,215,1,10),
+            (102,'2026-01-05 08:20:00',51.3100,7.4100,74,15,10013,289,284,279,76,220,1,10),
+            (103,'2026-01-05 08:30:00',51.3150,7.4150,0,0,10018.4,284,279,274,74,218,1,10);
+          INSERT INTO addresses VALUES (20,'QA TeslaMate Ladeort',51.3200,7.4200);
+          INSERT INTO geofences VALUES (30,'QA TeslaMate Zuhause',51.3000,7.4000,55);
+          INSERT INTO charging_processes VALUES
+            (40,'2026-01-05 18:00:00','2026-01-05 19:00:00',24.5,25.1,40,78,60,1,NULL,30,20,9.80);
+          INSERT INTO charges VALUES
+            (50,'2026-01-05 18:10:00',11,40),
+            (51,'2026-01-05 18:20:00',22,40);
+          INSERT INTO states VALUES
+            (60,'online','2026-01-05 07:55:00','2026-01-05 08:35:00',1),
+            (61,'asleep','2026-01-06 00:00:00','2026-01-06 06:00:00',1);
+          SQL
+
+          # Match TeslaMate's documented backup command: plain pg_dump redirected to teslamate.bck.
+          docker exec trakfog-teslamate-qa pg_dump -U postgres -d teslamate -f /tmp/teslamate.bck
+          docker cp trakfog-teslamate-qa:/tmp/teslamate.bck /tmp/teslamate.bck
+          docker cp /tmp/teslamate.bck trakfog-web:/tmp/teslamate.bck
+
+          IMPORT_JOB="$(docker exec trakfog-web php -r '
+            require "/var/www/html/src/bootstrap.php";
+            $file = [
+              "error" => UPLOAD_ERR_OK,
+              "tmp_name" => "/tmp/teslamate.bck",
+              "size" => filesize("/tmp/teslamate.bck"),
+              "name" => "teslamate.bck",
+            ];
+            $job = DataMigrationService::createImportJob($pdo, $file, 1);
+            if (($job["source"] ?? null) !== "teslamate") {
+              throw new RuntimeException("TeslaMate backup was not detected");
+            }
+            $analysis = $job["analysis"] ?? [];
+            if (empty($analysis["ready"])) {
+              throw new RuntimeException("TeslaMate backup was not marked ready");
+            }
+            if (($analysis["format"] ?? null) !== "PostgreSQL SQL Dump") {
+              throw new RuntimeException("Official plain TeslaMate backup was not detected as SQL dump");
+            }
+            DataMigrationService::startImport($pdo, (int)$job["id"]);
+            echo (int)$job["id"];
+          ')"
+          test -n "$IMPORT_JOB"
+
+          IMPORT_STATUS=""
+          for i in $(seq 1 90); do
+            IMPORT_STATUS="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT status FROM data_migration_jobs WHERE id=$IMPORT_JOB;")"
+            if [ "$IMPORT_STATUS" = "completed" ]; then break; fi
+            if [ "$IMPORT_STATUS" = "failed" ]; then
+              docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT error_message FROM data_migration_jobs WHERE id=$IMPORT_JOB;"
+              docker exec trakfog-web sh -lc "cat /var/lib/trakfog/migrations/logs/job-$IMPORT_JOB.log || true"
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$IMPORT_STATUS" = "completed"
+
+          VEHICLE_ID="$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT id FROM vehicles WHERE vin='QA-TM-VIN-0001' LIMIT 1;")"
+          test -n "$VEHICLE_ID"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT COUNT(*) FROM trips WHERE vehicle_id=$VEHICLE_ID AND started_at='2026-01-05 08:00:00';")" = "1"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT COUNT(*) FROM vehicle_stream_samples WHERE vehicle_id=$VEHICLE_ID AND recorded_at BETWEEN '2026-01-05 08:00:00' AND '2026-01-05 08:30:00';")" = "4"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT COUNT(*) FROM charges WHERE vehicle_id=$VEHICLE_ID AND started_at='2026-01-05 18:00:00';")" = "1"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT COUNT(*) FROM sleep_sessions WHERE vehicle_id=$VEHICLE_ID AND started_at='2026-01-06 00:00:00';")" = "1"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT COUNT(*) FROM geofences WHERE name='QA TeslaMate Zuhause';")" = "1"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT stored_path IS NULL FROM data_migration_jobs WHERE id=$IMPORT_JOB;")" = "1"
+          test "$(docker exec trakfog-db mariadb -N -uroot -p"$TRAKFOG_DB_ROOT_PASSWORD" "$TRAKFOG_DB_NAME" -e "SELECT cost_currency IS NULL FROM charges WHERE vehicle_id=$VEHICLE_ID AND started_at='2026-01-05 18:00:00';")" = "1"
+
+          echo "TESLAMATE OFFICIAL BACKUP IMPORT PASSED"
+
+      - name: Test ghost-trip filtering and authorized deletion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_trip_quality.py -v
+          python3 -m py_compile worker/trakfog_worker/trip_quality.py worker/trakfog_worker/db.py
+          php -l src/TripDeletion.php
+          php -l public/trip-delete.php
+          php -l src/trip-delete-dialog.php
+          node --check public/assets/js/trip-delete.js
+          grep -Fq 'Auth::requireAdmin()' public/trip-delete.php
+          grep -Fq 'Csrf::validate' public/trip-delete.php
+          grep -Fq 'data-trip-delete-id' public/trips.php
+          grep -Fq 'data-trip-delete-id' public/trip.php
+          grep -Fq 'TRAKFOG_MIN_TRIP_DISTANCE_METERS' docker-compose.yml
+          docker exec trakfog-web php /var/www/html/tests/test_trip_deletion.php
+
+      - name: Verify real trip consolidation (two trips become one)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s database/migrations/0.1.1.63.sql
+          php -l src/TripConsolidation.php
+          php tests/test_trip_consolidation_rules.php
+          node --check public/assets/js/trip-merge-ui.js
+          node --check public/assets/js/liveview.js
+          node tests/test_trip_merge_ui.cjs
+          python3 tests/qa_contracts.py
+          grep -Fq 'TripConsolidation::combine' public/trip-merge.php
+          ! grep -Fq 'Verbundene Touren' public/trips.php
+          docker exec trakfog-web php /var/www/html/tests/test_trip_consolidation.php
+
+      - name: Show stack status
+        run: docker compose ps
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

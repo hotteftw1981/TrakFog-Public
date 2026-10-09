@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 330" role="img" aria-labelledby="title desc">
+<title id="title">TrakFog</title>
+<desc id="desc">TrakFog wordmark with radar, location pin, glowing road and fog.</desc>
+<defs>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#63dcff"/><stop offset=".5" stop-color="#16a5ff"/><stop offset="1" stop-color="#2467ff"/>
+  </linearGradient>
+  <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#c6d8f5"/>
+  </linearGradient>
+  <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<g transform="translate(18 12)">
+  <circle cx="150" cy="154" r="128" fill="#07182d" stroke="#183d6c" stroke-width="7"/>
+  <path d="M36 154a114 114 0 0 1 228 0" fill="none" stroke="#157bcf" stroke-width="14" stroke-linecap="round"/>
+  <path d="M59 154a91 91 0 0 1 182 0" fill="none" stroke="#25c9ff" stroke-width="12" stroke-linecap="round" stroke-dasharray="58 29"/>
+  <path d="M84 154a66 66 0 0 1 132 0" fill="none" stroke="#e3f9ff" stroke-width="8" stroke-linecap="round" stroke-dasharray="34 22"/>
+  <path d="M150 18c-39 0-71 31-71 70 0 53 71 115 71 115s71-62 71-115c0-39-32-70-71-70Z" fill="url(#blue)" stroke="#e5fbff" stroke-width="6" filter="url(#glow)"/>
+  <circle cx="150" cy="87" r="28" fill="#07182d"/>
+  <g fill="#526d94" opacity=".8"><ellipse cx="82" cy="215" rx="55" ry="20"/><ellipse cx="212" cy="219" rx="65" ry="22"/><ellipse cx="150" cy="235" rx="116" ry="27"/></g>
+  <path d="M95 293c64-43 26-72 77-98 38-20 44-41 23-63" fill="none" stroke="#030b16" stroke-width="58" stroke-linecap="round"/>
+  <path d="M95 293c64-43 26-72 77-98 38-20 44-41 23-63" fill="none" stroke="url(#blue)" stroke-width="9" stroke-linecap="round" filter="url(#glow)"/>
+</g>
+<text x="330" y="214" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="178" font-weight="800" letter-spacing="-9" fill="url(#silver)">Trak</text>
+<text x="690" y="214" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="178" font-weight="800" letter-spacing="-9" fill="url(#blue)">Fog</text>
+</svg>

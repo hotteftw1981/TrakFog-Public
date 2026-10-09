@@ -1,0 +1,52 @@
+name: Fehlerbericht
+description: Reproduzierbaren Fehler der TrakFog Public Beta melden (keine privaten Daten teilen)
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bitte vor dem Absenden Tokens, vollständige VINs, GPS-Koordinaten, private Domains und persönliche Daten entfernen.
+        Sicherheitslücken NICHT öffentlich melden: SECURITY.md lesen.
+  - type: input
+    id: version
+    attributes:
+      label: TrakFog-Version
+      placeholder: "0.1.1.87"
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Installation
+      options:
+        - Docker Compose
+        - Portainer
+        - Sonstige
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduktionsschritte
+      description: Was muss man genau tun, um den Fehler zu sehen?
+      placeholder: "1. ...\n2. ...\n3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Tatsächliches Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Anonymisierte Zusatzinformationen (optional)
+      description: Nie Zugangsdaten, Telefonnummern, echte Adressen, GPS-Daten oder VINs teilen.

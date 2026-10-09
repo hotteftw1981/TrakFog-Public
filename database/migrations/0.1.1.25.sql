@@ -1,0 +1,41 @@
+CREATE TABLE IF NOT EXISTS geo_locations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    latitude DECIMAL(10,6) NOT NULL,
+    longitude DECIMAL(10,6) NOT NULL,
+    lat_key DECIMAL(9,5) NOT NULL,
+    lon_key DECIMAL(9,5) NOT NULL,
+    display_name VARCHAR(255) NULL,
+    road VARCHAR(160) NULL,
+    house_number VARCHAR(40) NULL,
+    postcode VARCHAR(24) NULL,
+    city VARCHAR(120) NULL,
+    state VARCHAR(120) NULL,
+    country VARCHAR(120) NULL,
+    country_code VARCHAR(8) NULL,
+    status VARCHAR(24) NOT NULL DEFAULT 'pending',
+    provider VARCHAR(40) NULL,
+    attempts SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    last_attempt_at DATETIME NULL,
+    resolved_at DATETIME NULL,
+    raw_json MEDIUMTEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_geo_location_key (lat_key, lon_key),
+    INDEX idx_geo_location_status (status, attempts),
+    INDEX idx_geo_location_resolved (resolved_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS geofences (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    kind VARCHAR(40) NOT NULL DEFAULT 'place',
+    latitude DECIMAL(10,6) NOT NULL,
+    longitude DECIMAL(10,6) NOT NULL,
+    radius_m INT UNSIGNED NOT NULL DEFAULT 150,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    notes VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_geofence_active (active),
+    INDEX idx_geofence_position (latitude, longitude)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

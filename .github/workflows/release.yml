@@ -1,0 +1,75 @@
+name: Release TrakFog
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - VERSION
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  docker-qa:
+    uses: ./.github/workflows/docker-qa.yml
+
+  release:
+    needs: docker-qa
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Validate PHP
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: Build clean ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="TrakFog-V${{ steps.version.outputs.version }}.zip"
+          zip -r "$ZIP" . -x ".git/*" ".github/*" "*.log" ".DS_Store"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrakFog-V${{ steps.version.outputs.version }}
+          path: TrakFog-V${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.version.outputs.tag }}"
+          ZIP="TrakFog-V${{ steps.version.outputs.version }}.zip"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ZIP" --clobber
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+            gh release create "$TAG" "$ZIP" --target "$GITHUB_SHA" --title "TrakFog V${{ steps.version.outputs.version }}" --generate-notes
+          fi
+
+      - name: Advance stable branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin "$GITHUB_SHA:refs/heads/stable" --force
