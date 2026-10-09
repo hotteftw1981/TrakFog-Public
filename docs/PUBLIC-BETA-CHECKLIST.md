@@ -15,7 +15,7 @@
 
 ## Veröffentlichung (manuell, zwingend vor Umschalten auf Public)
 
-- [x] Nicht freigegebene Tesla-Fahrzeugbilder komplett aus Public-Snapshot **und Git-Historie** ausgeschlossen; sechs originale generische SVG-Fahrzeugillustrationen enthalten. Siehe `docs/ASSET-ORIGINS.md`. TrakFog-Projektlogo verbleibt beim Berechtigten.
+- [x] Nicht freigegebene Tesla-Fahrzeugbilder komplett aus Public-Snapshot **und Git-Historie** ausgeschlossen; seit V0.1.1.91 sechs eigens generierte, transparente AVIF-Studioillustrationen enthalten. Siehe `docs/ASSET-ORIGINS.md`. TrakFog-Projektlogo verbleibt beim Berechtigten.
 - [x] Frisches, separates Repository **TrakFog-Public** ohne private Entwicklungs-Git-Historie aufgebaut. In der Public-Git-Historie befinden sich keine alten Tesla-Fahrzeugbilder. Keine persönlichen Tokens aus der privaten Entwicklungsinstanz übernommen.
 - [ ] Tesla-Datenzugang/Nutzungsbedingungen und eventuelle rechtliche Einschränkungen für das konkrete Projekt bewerten.
 - [ ] GitHub Private Vulnerability Reporting aktivieren und testen; Issues/Discussions für Support aktivieren (manuelle GitHub-Einstellung).

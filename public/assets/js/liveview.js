@@ -990,10 +990,10 @@
     return null;
   };
   const carAssets=Object.freeze({
-    '3':'assets/vehicles/model-3-white.svg',
-    y:'assets/vehicles/model-y-white.svg',
-    s:'assets/vehicles/model-s-white.svg',
-    x:'assets/vehicles/model-x-white.svg'
+    '3':'assets/vehicles/model-3-white.avif',
+    y:'assets/vehicles/model-y-white.avif',
+    s:'assets/vehicles/model-s-white.avif',
+    x:'assets/vehicles/model-x-white.avif'
   });
   const carModeLabels=Object.freeze({
     driving:'Unterwegs', charging:'Lädt', parked:'Geparkt',
@@ -1038,7 +1038,7 @@
     // Server resolves both VIN model-year uncertainty and persisted manual choice.
     // Only fixed, bundled filenames are accepted, never arbitrary remote URLs.
     const allowedAssets=new Set([...Object.values(carAssets),
-      'assets/vehicles/model-y-classic.svg','assets/vehicles/model-3-classic.svg']);
+      'assets/vehicles/model-y-classic.avif','assets/vehicles/model-3-classic.avif']);
     const asset=visual && allowedAssets.has(visual.asset) ? visual.asset
       : visual ? null : (model?carAssets[model]:null);
     scene.dataset.mode=mode;

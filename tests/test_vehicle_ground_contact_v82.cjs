@@ -22,9 +22,9 @@ assert(js.includes("scene.dataset.image='ready'"),'existing image readiness cont
 assert(endDash.includes('.dashboard-wheel-contact')&&endDash.includes('inset:0'),'dashboard shadow shares car coordinates');
 assert(endDash.includes('dashboard-hero-stage::after{display:none!important}'),'old stage-wide shadow removed');
 assert(!endDash.includes('animation:'),'ground contact is never animated');
-for(const name of ['model-y-classic.svg','model-y-white.svg','model-3-classic.svg','model-3-white.svg','model-s-white.svg','model-x-white.svg']){
+for(const name of ['model-y-classic.avif','model-y-white.avif','model-3-classic.avif','model-3-white.avif','model-s-white.avif','model-x-white.avif']){
  const file=path.join(root,'public/assets/vehicles',name);
- assert(fs.statSync(file).size>1000,'bundled original generic SVG art: '+name);
+ assert(fs.statSync(file).size>1000,'bundled generated AVIF studio art: '+name);
 }
 // V84: Shadow tuning must never alter the accepted V83 vehicle position.
 const shadowV84=dash.split('/* V0.1.1.84 | Refine only image-bound ground shadows. V83 car position is locked. */')[1]?.split('/* V0.1.1.83 |')[0];
@@ -37,6 +37,7 @@ for(const part of [
  'drop-shadow(0 7px 5px rgba(0,0,0,.28))',
 ])assert(shadowV84.includes(part),'V84 image-bound shadow geometry: '+part);
 assert(!shadowV84.includes('bottom: calc('),'V84 does not move the primary car');
+assert(dash.includes('V0.1.1.91 | Public AVIF renders include their own contact shadow'),'Public ground-shadows compatibility CSS is present');
 // V85: add ONLY a diffuse center-underbody gradient in the image-bound shadow layer.
 const centerShadow='radial-gradient(ellipse 24% 3.5% at 61% 73%,rgba(0,0,0,.19) 0%,rgba(0,0,0,.11) 43%,transparent 100%)';
 assert(dash.includes(centerShadow),'V85 soft middle-underbody shadow present');

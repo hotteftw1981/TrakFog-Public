@@ -417,6 +417,10 @@
   filter:blur(7px);
 }
 
+/* V0.1.1.91 | Public AVIF renders include their own contact shadow; disable outdated wheel shadows. */
+.dashboard-v2 .dashboard-primary-car .dashboard-wheel-contact,
+.dashboard-v2 .dashboard-primary-car .dashboard-chassis-contact{display:none!important}
+
 /* V0.1.1.83 | Dashboard height calibration: lower the car 60px from V82.
    The shadow is image-bound and moves together with its existing wrapper.
    Tesla-browser/mobile breakpoints retain their established positioning. */

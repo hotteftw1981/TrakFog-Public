@@ -6,14 +6,14 @@
 
 Selbst gehostete Tesla-Datenplattform für **Live-Telemetrie, Fahrten, Laden, Karten, Reisen und Langzeitauswertungen**.
 
-**V0.1.1.90** · Public Beta · Docker / Portainer · **AGPL-3.0-only**
+**V0.1.1.91** · Public Beta · Docker / Portainer · **AGPL-3.0-only**
 
 [🚘 Modellbilder & verbundene Fahrten](#modellbilder--verbundene-fahrten) · [🚀 Installation](#installation) · [🐳 Docker](docker/DOCKER.md) · [🧰 Portainer](docker/PORTAINER.md) · [↔ Datenmigration](#data-migration) · [🔗 Integration API](#integration-api) · [📺 LiveView](#liveview-access) · [⬆️ Releases & Updates](#releases) · [🧭 Roadmap](#roadmap) · [📜 Changelog](CHANGELOG.md) · [⚖️ Lizenz](#license)
 
 </div>
 
 > [!IMPORTANT]
-> **Erste öffentliche Beta:** Der Code ist aus einem frischen, bereinigten Snapshot aufgebaut. Die sechs Fahrzeugillustrationen sind eigens gestaltete, generische SVG-Grafiken – **keine Tesla-Produktfotos oder -Renderings**. Das private Entwicklungsrepository und seine historische Bildsammlung sind nicht enthalten. Details: [Public-Beta-Freigabe](docs/PUBLIC-BETA-CHECKLIST.md) · [Datenschutz & Datenflüsse](docs/PRIVACY.md) · [Security](SECURITY.md) · [Grafik-Herkunft](docs/ASSET-ORIGINS.md).
+> **Erste öffentliche Beta:** Der Code ist aus einem frischen, bereinigten Snapshot aufgebaut. Die sechs Fahrzeugbilder sind für TrakFog eigens generierte, realistische Studioillustrationen im AVIF-Format – **keine von Tesla übernommenen Fotos, Renderings oder Marketingmaterialien**. Das private Entwicklungsrepository und seine historische Bildsammlung sind nicht enthalten. Details: [Public-Beta-Freigabe](docs/PUBLIC-BETA-CHECKLIST.md) · [Datenschutz & Datenflüsse](docs/PRIVACY.md) · [Security](SECURITY.md) · [Grafik-Herkunft](docs/ASSET-ORIGINS.md).
 >
 > Ein neuer Owner darf **nur** mit dem lokal gespeicherten Installationsschlüssel angelegt werden. Der Schlüssel bleibt privat; er ist weder Tesla-Token noch Benutzerpasswort.
 

@@ -704,3 +704,5 @@
 @media(max-height:620px){
   .live-root.lv-vehicle-visualization .lv-car-sprite{left:50%;top:4%;height:92%;}
 }
+/* V0.1.1.91 | Public-generated AVIF vehicle images include ground shadows. */
+.live-root.lv-vehicle-visualization .lv-car-sprite .lv-car-scene-contact{display:none!important}

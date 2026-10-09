@@ -12,7 +12,7 @@ function mockVin(string $model,string $year): string {
 }
 $classicY=TeslaVehicleArt::resolve('modely',null,mockVin('Y','R'));
 expect($classicY['variant']==='y-classic','2024 Model Y must be classic');
-expect($classicY['asset']==='assets/vehicles/model-y-classic.svg','classic Y asset');
+expect($classicY['asset']==='assets/vehicles/model-y-classic.avif','classic Y asset');
 expect($classicY['year']===2024,'VIN year from index 10');
 $ambigY=TeslaVehicleArt::resolve('modely',null,mockVin('Y','S'));
 expect($ambigY['variant']===null && $ambigY['needs_selection'],'2025 Y ambiguous');

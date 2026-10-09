@@ -266,9 +266,9 @@ jobs:
           grep -Fq 'TeslaVehicleArt::asset' public/app.php
           grep -Fq 'data-car-asset' public/app.php
           grep -Fq 'dashboard-thumb-link' public/app.php
-          test -s public/assets/vehicles/model-3-white.svg
-          test -s public/assets/vehicles/model-s-white.svg
-          test -s public/assets/vehicles/model-x-white.svg
+          test -s public/assets/vehicles/model-3-white.avif
+          test -s public/assets/vehicles/model-s-white.avif
+          test -s public/assets/vehicles/model-x-white.avif
           grep -Fq 'TripMerge::suggestionFor' public/live-data.php
           grep -Fq 'data-trip-merge-choice' public/trips.php
           grep -Fq 'lvTripMergeToggle' public/live.php
@@ -281,7 +281,7 @@ jobs:
           python3 tests/qa_contracts.py
           grep -Fq 'data-secondary-car="<?= $stackIndex ?>"' public/app.php
           ! grep -Fq 'dashboard-car-svg' public/app.php
-          test -s public/assets/vehicles/model-y-white.svg
+          test -s public/assets/vehicles/model-y-white.avif
           test -s public/assets/css/living-garage.css
           test -s public/assets/js/living-garage.js
           grep -Fq 'lg-atmosphere' public/app.php
@@ -443,8 +443,8 @@ jobs:
           grep -Fq 'vehicle_art_variant' public/vehicle.php
           grep -Fq "'visual' => \$carArt" public/live-data.php
           grep -Fq 'lvSessionEmpty' public/live.php
-          grep -Fq 'assets/vehicles/model-y-classic.svg' src/TeslaVehicleArt.php
-          grep -Fq 'assets/vehicles/model-3-classic.svg' src/TeslaVehicleArt.php
+          grep -Fq 'assets/vehicles/model-y-classic.avif' src/TeslaVehicleArt.php
+          grep -Fq 'assets/vehicles/model-3-classic.avif' src/TeslaVehicleArt.php
 
       - name: Validate compose
         run: docker compose config >/dev/null

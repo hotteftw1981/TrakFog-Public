@@ -11,7 +11,7 @@ checks={
 '4 model artwork': all((root/f'public/assets/vehicles/model-{m}-white.svg').is_file() for m in ('3','s','x','y')),
 'generation-aware dashboard': all(s in (root/'public/app.php').read_text() for s in ('TeslaVehicleArt::resolve','data-car-asset','dashboard-thumb-link')),
 'VIN variants and override': all(s in (root/'src/TeslaVehicleArt.php').read_text() for s in ('vinInfo(', 'saveOverride(', 'needs_selection')),
-'classic model artwork': all((root/'public/assets/vehicles'/x).is_file() for x in ('model-y-classic.svg','model-3-classic.svg')),
+'classic model artwork': all((root/'public/assets/vehicles'/x).is_file() for x in ('model-y-classic.avif','model-3-classic.avif')),
 'favorite-selected asset switch': 'primaryImage.setAttribute' in (root/'public/assets/js/app.js').read_text(),
 'fleet map shows additional cars': all(s in (root/'public/assets/js/liveview.js').read_text() for s in ('otherVehicleMarkers','data.vehicles','selectedVehicleId=id')),
 'no extra Tesla requests': 'TeslaService::refresh' not in (root/'public/live-data.php').read_text(),
@@ -31,13 +31,10 @@ checks={
 }
 for model in ['3','s','x','y']:
  path=root/f'public/assets/vehicles/model-{model}-white.svg'
- source=path.read_text(encoding='utf-8') if path.is_file() else ''
- checks['Model '+model+' original, scalable vector']=(
-  source.startswith('<svg ')
-  and 'viewBox="0 0 1448 1086"' in source
-  and 'TrakFog Public: original fictional EV illustration' in source
-  and '<image ' not in source
-  and '<script' not in source
+ raw=path.read_bytes() if path.is_file() else b''
+ checks['Model '+model+' generated AVIF studio render']=(
+  len(raw)>10000
+  and raw[4:12]==b'ftypavif'
  )
 for name,ok in checks.items():print(('PASS' if ok else 'FAIL')+': '+name)
 if not all(checks.values()):sys.exit(1)

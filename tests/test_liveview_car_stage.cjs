@@ -24,10 +24,10 @@ for(const input of ['Hotte Y','Hotte','Cybertruck','Model 2','',null,undefined])
   assert.equal(normalizeTeslaModel(input),null,'do not guess image from nickname: '+input);
 }
 for(const [model,filename] of Object.entries({
-  '3':'model-3-white.svg',y:'model-y-white.svg',s:'model-s-white.svg',x:'model-x-white.svg'
+  '3':'model-3-white.avif',y:'model-y-white.avif',s:'model-s-white.avif',x:'model-x-white.avif'
 })){
   assert.equal(carAssets[model],'assets/vehicles/'+filename);
-  assert(fs.statSync(path.join(base,'public/assets/vehicles',filename)).size>1000,
+  assert(fs.statSync(path.join(base,'public/assets/vehicles',filename)).size>10000,
     filename+' packaged as a non-empty asset');
 }
 for(const mode of ['driving','charging','parked','sleeping','stale'])

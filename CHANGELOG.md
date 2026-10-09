@@ -1,5 +1,12 @@
 # 🧾 TrakFog Changelog
 
+## V0.1.1.91 – Neue TrakFog-Public-Fahrzeugbilder
+
+- Alle sechs vereinfachten SVG-Platzhalter durch eigens generierte realistische, transparente Elektrofahrzeug-Studioillustrationen im AVIF-Format ersetzt (Model 3 Classic/Highland, Model Y Classic/Juniper, Model S/X).
+- Die neuen Bilder sind lokal optimiert und enthalten bereits weiche Bodenschatten; die zusätzlichen veralteten Schattenebenen werden in der Public-Version ausgeblendet.
+- Dashboard, LiveView, VIN-Auswahl, automatische Modellzuordnung, Qualitätsprüfungen und Installationsdokumentation angepasst.
+- Keine fremden Tesla-Grafiken übernommen. Das private TrakFog-Repository und dessen Updatekanal bleiben unangetastet.
+
 ## V0.1.1.90 – Public Beta: generische SVGs auch in QA absichern
 
 - QA-Vertrag für die vier Fahrzeugfamilien auf die eigens erstellten SVG-Vektoren umgestellt. Keine fehlenden AVIF-Dateien mehr erwartet.

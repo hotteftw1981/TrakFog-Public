@@ -174,7 +174,7 @@ $version = app_version();
                 <div class="lv-car-scene-energy" aria-hidden="true"></div>
                 <div class="lv-car-sprite" aria-hidden="true">
                   <span class="lv-car-scene-contact"></span>
-                  <img class="lv-car-scene-image" id="lvCarSceneImage" src="assets/vehicles/model-y-white.svg" alt="" draggable="false" decoding="async" hidden>
+                  <img class="lv-car-scene-image" id="lvCarSceneImage" src="assets/vehicles/model-y-white.avif" alt="" draggable="false" decoding="async" hidden>
                 </div>
                 <span class="lv-car-scene-fallback" id="lvCarSceneFallback" hidden>TESLA</span>
                 <div class="lv-car-scene-identity">

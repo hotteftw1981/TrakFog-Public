@@ -1,18 +1,18 @@
-# Fahrzeugvarianten und originale Public-Beta-Illustrationen
+# Fahrzeugvarianten und TrakFog-Public-Studioillustrationen
 
-TrakFog Public nutzt sechs **eigens gestaltete, generische SVG-Elektrofahrzeugillustrationen**. Sie sind keine Tesla-Produktbilder und sollen keine genaue Ausstattung, Front oder Karosserie eines Tesla-Modells darstellen. Die alte Tesla-Bildsammlung wird bewusst weder als Datei noch in der Git-Historie dieses Repositories veröffentlicht.
+Seit **V0.1.1.91** nutzt TrakFog Public sechs **eigens generierte, realistische Elektrofahrzeugillustrationen** mit transparentem Hintergrund im optimierten AVIF-Format. Dies sind keine von Tesla bereitgestellten Produktbilder. Die Bilder ersetzen die alten schematischen SVG-Platzhalter.
 
-| Identifizierte Fahrzeugvariante | Öffentliches, abstraktes Bild |
+| Fahrzeugvariante | Bilddatei |
 | --- | --- |
-| Model 3 klassisch | `model-3-classic.svg` |
-| Model 3 Highland | `model-3-white.svg` |
-| Model Y klassisch | `model-y-classic.svg` |
-| Model Y Juniper | `model-y-white.svg` |
-| Model S | `model-s-white.svg` |
-| Model X | `model-x-white.svg` |
+| Model 3 klassisch | `model-3-classic.avif` |
+| Model 3 Highland | `model-3-white.avif` |
+| Model Y klassisch | `model-y-classic.avif` |
+| Model Y Juniper | `model-y-white.avif` |
+| Model S | `model-s-white.avif` |
+| Model X | `model-x-white.avif` |
 
-Die originale VIN-Auswertung arbeitet lokal ohne externe Decoder; die 10. Stelle nennt das Modelljahr und bestätigt **nicht** sicher ein Facelift. Übergangsjahre werden konservativ behandelt: Model Y 2025 und Model 3 2023 bleiben ohne explizite Konfiguration zunächst unklar, sofern keine manuelle Auswahl erfolgt. Die Variantenauswahl unter **Fahrzeugdetail → Fahrzeugdarstellung** kann eine zulässige Variante speichern, die immer gegen die tatsächliche Modellfamilie geprüft wird. Dashboard und LiveView greifen auf denselben Resolver zu.
+Die VIN-Erkennung erfolgt weiterhin lokal ohne externe Decoder. Die 10. VIN-Stelle bezeichnet das Modelljahr, ist aber kein zuverlässiger Facelift-Nachweis. Übergangsjahre (Model 3 2023 und Model Y 2025) bleiben ohne weitere Modellangaben zunächst unklar. Unter **Fahrzeugdetail → Fahrzeugdarstellung** kann eine zum Fahrzeug passende Variante ausgewählt werden. Dashboard und LiveView verwenden dieselbe Zuordnung.
 
-In der Public Beta sind die Vektoren absichtlich frei von Tesla-spezifischer Karosserie, Markenzeichen und fotorealistischen Modelldetails. Die Displaygröße nutzt weiterhin eine 1448×1086 SVG-Koordinatenfläche, damit die bestehenden responsiven Komponenten und Schattenebenen kompatibel bleiben.
+Die sechs transparenten Bilder besitzen dasselbe 4:3-Format wie die bisherige Fahrzeugbühne und werden lokal ausgeliefert. Da bereits ein weicher Bodenschatten zu den generierten Bildern gehört, werden die früheren zusätzlichen Schatten der Public-Bühne ausgeblendet.
 
-Siehe [ASSET-ORIGINS.md](ASSET-ORIGINS.md) für Herkunft und Freigabe, [PUBLIC-BETA-CHECKLIST.md](PUBLIC-BETA-CHECKLIST.md) für die externen Freigabeschritte.
+Siehe [ASSET-ORIGINS.md](ASSET-ORIGINS.md) für die Herkunft und [PUBLIC-BETA-CHECKLIST.md](PUBLIC-BETA-CHECKLIST.md) für die Veröffentlichungskontrollen.

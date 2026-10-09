@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 /**
- * Tesla family + generation selection with original generic public-beta vector artwork. VIN decoding is local and conservative.
- * No Tesla-supplied or photorealistic model renders are distributed here.\n * Tesla's tenth VIN character identifies a year, NOT the facelift directly.
+ * Tesla family + generation selection with original TrakFog-created studio artwork. VIN decoding is local and conservative.
+ * No Tesla-supplied images are distributed; these AVIF renders were newly generated for TrakFog.\n * Tesla's tenth VIN character identifies a year, NOT the facelift directly.
  * A manual per-vehicle override always wins when it matches the vehicle family.
  */
 final class TeslaVehicleArt
@@ -15,12 +15,12 @@ final class TeslaVehicleArt
         'R'=>2024, 'E'=>2024, 'S'=>2025, 'T'=>2026, 'V'=>2027,
     ];
     private const ASSETS = [
-        '3-classic'=>'assets/vehicles/model-3-classic.svg',
-        '3-highland'=>'assets/vehicles/model-3-white.svg',
-        'y-classic'=>'assets/vehicles/model-y-classic.svg',
-        'y-juniper'=>'assets/vehicles/model-y-white.svg',
-        's'=>'assets/vehicles/model-s-white.svg',
-        'x'=>'assets/vehicles/model-x-white.svg',
+        '3-classic'=>'assets/vehicles/model-3-classic.avif',
+        '3-highland'=>'assets/vehicles/model-3-white.avif',
+        'y-classic'=>'assets/vehicles/model-y-classic.avif',
+        'y-juniper'=>'assets/vehicles/model-y-white.avif',
+        's'=>'assets/vehicles/model-s-white.avif',
+        'x'=>'assets/vehicles/model-x-white.avif',
     ];
     private const LABELS = [
         '3-classic'=>'Model 3 · Klassisch',
