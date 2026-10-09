@@ -1,6 +1,12 @@
 # 🧾 TrakFog Changelog
 
-## V0.1.1.89 – Erste TrakFog Public Beta (sauberer Snapshot)
+## V0.1.1.90 – Public Beta: generische SVGs auch in QA absichern
+
+- QA-Vertrag für die vier Fahrzeugfamilien auf die eigens erstellten SVG-Vektoren umgestellt. Keine fehlenden AVIF-Dateien mehr erwartet.
+- Der Test prüft SVG-Koordinaten, lokale Originalgrafiken ohne verlinkte Fremdbilder oder Scripts.
+
+
+## V0.1.1.90 – Erste TrakFog Public Beta (sauberer Snapshot)
 
 - Neuer, von Anfang an eigenständiger Public-Distributionszweig im Repository TrakFog-Public, ohne die private Entwicklungs-Git-Historie.
 - Sechs extern nicht freigegebene Tesla-Renderings durch eigens erstellte, bewusst generische SVG-Elektrofahrzeugillustrationen ersetzt; alle sechs Varianten und LiveView-Pfade bleiben vorhanden.

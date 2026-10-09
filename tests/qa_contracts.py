@@ -8,10 +8,10 @@ import re,sys,subprocess
 root=Path(__file__).resolve().parents[1]
 version=(root/'VERSION').read_text().strip()
 checks={
-'4 model artwork': all((root/f'public/assets/vehicles/model-{m}-white.avif').is_file() for m in ('3','s','x','y')),
+'4 model artwork': all((root/f'public/assets/vehicles/model-{m}-white.svg').is_file() for m in ('3','s','x','y')),
 'generation-aware dashboard': all(s in (root/'public/app.php').read_text() for s in ('TeslaVehicleArt::resolve','data-car-asset','dashboard-thumb-link')),
 'VIN variants and override': all(s in (root/'src/TeslaVehicleArt.php').read_text() for s in ('vinInfo(', 'saveOverride(', 'needs_selection')),
-'classic model artwork': all((root/'public/assets/vehicles'/x).is_file() for x in ('model-y-classic.webp','model-3-classic.webp')),
+'classic model artwork': all((root/'public/assets/vehicles'/x).is_file() for x in ('model-y-classic.svg','model-3-classic.svg')),
 'favorite-selected asset switch': 'primaryImage.setAttribute' in (root/'public/assets/js/app.js').read_text(),
 'fleet map shows additional cars': all(s in (root/'public/assets/js/liveview.js').read_text() for s in ('otherVehicleMarkers','data.vehicles','selectedVehicleId=id')),
 'no extra Tesla requests': 'TeslaService::refresh' not in (root/'public/live-data.php').read_text(),
@@ -30,12 +30,15 @@ checks={
 'full beta bundle includes migrations': (root/'database/migrations/0.1.1.63.sql').exists(),
 }
 for model in ['3','s','x','y']:
- path=root/f'public/assets/vehicles/model-{model}-white.avif'
- if Image is not None:
-  with Image.open(path) as im:
-   checks['Model '+model+' transparent art']=im.mode=='RGBA' and im.getpixel((0,0))[3]==0 and im.getpixel((im.width-1,0))[3]==0
- else:
-  checks['Model '+model+' valid AVIF header']=b'avif' in path.read_bytes()[:32]
+ path=root/f'public/assets/vehicles/model-{model}-white.svg'
+ source=path.read_text(encoding='utf-8') if path.is_file() else ''
+ checks['Model '+model+' original, scalable vector']=(
+  source.startswith('<svg ')
+  and 'viewBox="0 0 1448 1086"' in source
+  and 'TrakFog Public: original fictional EV illustration' in source
+  and '<image ' not in source
+  and '<script' not in source
+ )
 for name,ok in checks.items():print(('PASS' if ok else 'FAIL')+': '+name)
 if not all(checks.values()):sys.exit(1)
 print('TESTS:',len(checks),'passed')

@@ -6,7 +6,7 @@
 
 Selbst gehostete Tesla-Datenplattform für **Live-Telemetrie, Fahrten, Laden, Karten, Reisen und Langzeitauswertungen**.
 
-**V0.1.1.89** · Public Beta · Docker / Portainer · **AGPL-3.0-only**
+**V0.1.1.90** · Public Beta · Docker / Portainer · **AGPL-3.0-only**
 
 [🚘 Modellbilder & verbundene Fahrten](#modellbilder--verbundene-fahrten) · [🚀 Installation](#installation) · [🐳 Docker](docker/DOCKER.md) · [🧰 Portainer](docker/PORTAINER.md) · [↔ Datenmigration](#data-migration) · [🔗 Integration API](#integration-api) · [📺 LiveView](#liveview-access) · [⬆️ Releases & Updates](#releases) · [🧭 Roadmap](#roadmap) · [📜 Changelog](CHANGELOG.md) · [⚖️ Lizenz](#license)
 
