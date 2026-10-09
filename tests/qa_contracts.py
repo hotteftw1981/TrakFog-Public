@@ -8,7 +8,7 @@ import re,sys,subprocess
 root=Path(__file__).resolve().parents[1]
 version=(root/'VERSION').read_text().strip()
 checks={
-'4 model artwork': all((root/f'public/assets/vehicles/model-{m}-white.svg').is_file() for m in ('3','s','x','y')),
+'4 model artwork': all((root/f'public/assets/vehicles/model-{m}-white.avif').is_file() for m in ('3','s','x','y')),
 'generation-aware dashboard': all(s in (root/'public/app.php').read_text() for s in ('TeslaVehicleArt::resolve','data-car-asset','dashboard-thumb-link')),
 'VIN variants and override': all(s in (root/'src/TeslaVehicleArt.php').read_text() for s in ('vinInfo(', 'saveOverride(', 'needs_selection')),
 'classic model artwork': all((root/'public/assets/vehicles'/x).is_file() for x in ('model-y-classic.avif','model-3-classic.avif')),
@@ -30,7 +30,7 @@ checks={
 'full beta bundle includes migrations': (root/'database/migrations/0.1.1.63.sql').exists(),
 }
 for model in ['3','s','x','y']:
- path=root/f'public/assets/vehicles/model-{model}-white.svg'
+ path=root/f'public/assets/vehicles/model-{model}-white.avif'
  raw=path.read_bytes() if path.is_file() else b''
  checks['Model '+model+' generated AVIF studio render']=(
   len(raw)>10000
